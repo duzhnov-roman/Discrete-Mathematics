@@ -1,0 +1,658 @@
+% !TEX program = xelatex
+% Отчёт о лабораторной работе № 1 по дисциплине «Дискретная математика»
+% «Код Грея. Мультимножества и операции над ними»
+% Компиляция: xelatex Lab1_Multisets.tex (дважды — для содержания и ссылок)
+% Рядом с файлом должны лежать рисунки scr*.png, в папке уровнем выше — gray_code.cpp и lab1.cpp
+\documentclass[14pt,a4paper]{extarticle}
+
+% ---------- Шрифты и язык ----------
+\usepackage{fontspec}
+\IfFontExistsTF{Times New Roman}
+  {\setmainfont{Times New Roman}}
+  {\setmainfont{Liberation Serif}}
+\IfFontExistsTF{Courier New}
+  {\setmonofont{Courier New}}
+  {\setmonofont{Liberation Mono}}
+\usepackage[english]{babel}
+\babelprovide[import, main]{russian}
+\usepackage{unicode-math}
+\setmathfont{latinmodern-math.otf}
+\IfFontExistsTF{Times New Roman}
+  {\setmathfont[range={up/{latin,Latin,num}}]{Times New Roman}
+   \setmathfont[range={it/{latin,Latin}}]{Times New Roman Italic}}
+  {\setmathfont[range={up/{latin,Latin,num}}]{Liberation Serif}
+   \setmathfont[range={it/{latin,Latin}}]{Liberation Serif Italic}}
+
+% ---------- Поля и интервалы (ГОСТ 7.32-2017, п. 6.1.1) ----------
+\usepackage[left=30mm,right=15mm,top=20mm,bottom=20mm,footskip=10mm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\setlength{\parindent}{1.25cm}
+\usepackage{indentfirst}
+\setlength{\parskip}{0pt}
+\sloppy
+
+% ---------- Заголовки ----------
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{\parindent}{0pt}{12pt}
+\titlespacing*{\subsection}{\parindent}{12pt}{6pt}
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+
+% Каждый раздел основной части — с новой страницы
+\newcommand{\sectionbreak}{\clearpage}
+
+% Структурные элементы без номера: с новой страницы, по центру, прописными
+\newcommand{\structsection}[1]{%
+  \clearpage
+  \phantomsection
+  \addcontentsline{toc}{section}{#1}%
+  \begin{center}\textbf{#1}\end{center}\vspace{6pt}}
+
+% ---------- Содержание ----------
+\makeatletter
+\renewcommand{\tableofcontents}{%
+  {\centering\textbf{СОДЕРЖАНИЕ}\par}\vspace{12pt}%
+  \@starttoc{toc}}
+\renewcommand*{\l@section}{\@dottedtocline{1}{0pt}{1.5em}}
+\renewcommand*{\l@subsection}{\@dottedtocline{2}{1.5em}{2.3em}}
+\renewcommand{\@pnumwidth}{1.8em}
+\makeatother
+
+% ---------- Подписи рисунков и таблиц (ГОСТ 7.32-2017, пп. 6.5, 6.6) ----------
+\usepackage{caption}
+\DeclareCaptionLabelSeparator{gost}{~---~}
+\captionsetup{labelsep=gost, font={normalsize}, skip=6pt}
+\captionsetup[figure]{name=Рисунок, justification=centering}
+\captionsetup[table]{name=Таблица, justification=raggedright, singlelinecheck=false, position=top}
+
+% ---------- Таблицы, графика, формулы ----------
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array,tabularx,makecell}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=*, labelindent=\parindent, itemindent=0pt}
+\newlist{gostlist}{enumerate}{1}
+% Буквенная нумерация перечислений (без букв ё, з, й, о, ч, ъ, ы, ь)
+\newcommand{\gostletter}[1]{\ifcase#1\or а\or б\or в\or г\or д\or е\or ж\or и\or к\or л\or м\or н\or п\fi}
+\newcommand{\gostlettercnt}[1]{\gostletter{\value{#1}}}
+\AddEnumerateCounter{\gostlettercnt}{\gostletter}{м}
+\setlist[gostlist]{label=\gostlettercnt*), leftmargin=*, labelindent=\parindent, nosep}
+\newlist{dashlist}{itemize}{1}
+\setlist[dashlist]{label=--, leftmargin=*, labelindent=\parindent, nosep}
+
+% Сигнатура функции отдельной строкой
+\newcommand{\funchead}[1]{\par\medskip\noindent
+  \begin{minipage}{\linewidth}\raggedright\ttfamily\small #1\end{minipage}\par\nopagebreak}
+% Описание функции: вход / выход
+\newenvironment{funcdesc}{\begin{dashlist}}{\end{dashlist}}
+
+\usepackage{listings}
+\lstset{
+  language=C++,
+  basicstyle=\ttfamily\footnotesize,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  breaklines=true,
+  extendedchars=true,
+  numbers=left,
+  numberstyle=\tiny
+}
+% Символы из комментариев в коде, которых нет в моноширинном шрифте
+\usepackage{newunicodechar}
+\newunicodechar{∩}{\ensuremath{\cap}}
+\newunicodechar{∪}{\ensuremath{\cup}}
+% В latinmodern-math нет глифа U+29F5, используем обратную косую черту
+\AtBeginDocument{\renewcommand{\setminus}{\mathbin{\backslash}}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\usepackage[hidelinks]{hyperref}
+
+\pagestyle{plain}
+
+% ---------- Данные для титульного листа ----------
+\newcommand{\StudentGroup}{5130201/50302}
+
+% Обозначения
+\newcommand{\kA}{k_A(x)}
+\newcommand{\kB}{k_B(x)}
+
+\begin{document}
+% ======================= ТИТУЛЬНЫЙ ЛИСТ =======================
+\begin{titlepage}
+\begin{singlespace}
+\begin{center}
+Министерство науки и высшего образования Российской Федерации\\[2pt]
+Санкт-Петербургский политехнический университет Петра Великого\\[2pt]
+Институт компьютерных наук и кибербезопасности\\[2pt]
+Высшая школа технологий искусственного интеллекта
+
+\vspace{5cm}
+
+\textbf{ОТЧЁТ}\\[6pt]
+\textbf{о лабораторной работе № 1}\\[12pt]
+\textbf{«Код Грея. Мультимножества и операции над ними»}\\[12pt]
+по дисциплине «Дискретная математика»
+\end{center}
+
+\vspace{4cm}
+
+\noindent
+\begin{tabular}{@{}p{7.2cm}p{3.6cm}l@{}}
+Выполнил\\
+студент гр. \StudentGroup & \underline{\hspace{3cm}} & Р.\,Ю.~Дужнов\\[22pt]
+Проверил\\
+преподаватель & \underline{\hspace{3cm}} & А.\,В.~Востров\\
+\end{tabular}
+
+\vspace{1.2cm}
+\noindent\hfill «\underline{\hspace{0.9cm}}» \underline{\hspace{3.2cm}} 2026 г.
+
+\vfill
+\begin{center}
+Санкт-Петербург\\
+2026
+\end{center}
+\end{singlespace}
+\end{titlepage}
+\setcounter{page}{2}
+
+% ======================= СОДЕРЖАНИЕ =======================
+\begin{singlespace}
+\tableofcontents
+\end{singlespace}
+
+% ======================= ВВЕДЕНИЕ =======================
+\structsection{ВВЕДЕНИЕ}
+
+Реализована консольная программа, которая строит универсум мультимножеств из бинарного кода Грея разрядности $n$ и выполняет операции над двумя мультимножествами~[1]. Реализовано:
+\begin{gostlist}
+\item генерация универсума из $2^n$ кодов Грея;
+\item ручное и автоматическое заполнение двух мультимножеств заданной мощности;
+\item теоретико-множественные операции: объединение, пересечение, разности $A \setminus B$ и $B \setminus A$, симметрическая разность, дополнения $\overline{A}$ и $\overline{B}$;
+\item арифметические операции: сумма, разность, произведение, деление;
+\item меню и проверка диапазонов вводимых значений.
+\end{gostlist}
+
+Структуры данных: универсум~--- массив \code{int universe[2\^{}n]}; мультимножество~--- массив пар «код Грея, кратность» \code{int multiset[m][2]}, где $m$ не превышает мощности.
+
+Стек: C++, g++ (MinGW), Windows~11.
+
+% ======================= 1 =======================
+\section{Математическое описание}
+
+\subsection{Множества}
+
+Множество~--- совокупность различных элементов~[1]. Все множества рассматриваются как подмножества универсума $U$.
+
+Операции над $A, B \subseteq U$~[1]:
+\begin{align}
+A \cup B &= \{x \mid x \in A \text{ или } x \in B\}, \\
+A \cap B &= \{x \mid x \in A \text{ и } x \in B\}, \\
+A \setminus B &= \{x \mid x \in A \text{ и } x \notin B\}, \\
+A \mathbin{\triangle} B &= (A \setminus B) \cup (B \setminus A), \\
+\overline{A} &= U \setminus A,
+\end{align}
+\noindent где $A \cup B$~--- объединение;\\
+$A \cap B$~--- пересечение;\\
+$A \setminus B$~--- разность;\\
+$A \mathbin{\triangle} B$~--- симметрическая разность;\\
+$\overline{A}$~--- дополнение множества $A$ до универсума $U$.
+
+Тождество $A \setminus B = A \cap \overline{B}$ используется для определения разности мультимножеств.
+
+\subsection{Мультимножества}
+
+Мультимножество~--- совокупность элементов, допускающая повторения~[1]. Мультимножество $A$ над $U$ задаётся функцией кратности $k_A \colon U \to \{0, 1, 2, \ldots\}$~--- числом вхождений $x$ в $A$. Запись:
+\begin{equation}
+A = \{x_1^{k_A(x_1)}, x_2^{k_A(x_2)}, \ldots\},
+\end{equation}
+\noindent где $x_i$~--- элементы универсума;\\
+$k_A(x_i)$~--- кратность элемента $x_i$ в мультимножестве $A$.
+
+Элементы с нулевой кратностью не записываются. Мощность~--- сумма кратностей:
+\begin{equation}
+|A| = \sum_{x \in U} k_A(x).
+\end{equation}
+
+Универсум~--- мультимножество с кратностями $k_U(x)$; для любого $A$ над $U$ выполняется $k_A(x) \leqslant k_U(x)$.
+
+Кратность элемента $x \in U$ в результате операций.
+
+Теоретико-множественные операции:
+\begin{align}
+k_{A \cup B}(x) &= \max\bigl(\kA, \kB\bigr), \\
+k_{A \cap B}(x) &= \min\bigl(\kA, \kB\bigr), \\
+k_{\overline{A}}(x) &= k_U(x) - \kA, \\
+k_{A \setminus B}(x) &= \min\bigl(\kA,\; k_U(x) - \kB\bigr), \\
+k_{A \triangle B}(x) &= \max\bigl(k_{A \setminus B}(x),\; k_{B \setminus A}(x)\bigr),
+\end{align}
+\noindent где $k_U(x)$~--- кратность элемента $x$ в универсуме.
+
+Формула~(11) следует из $A \setminus B = A \cap \overline{B}$ и формул~(9), (10); формула~(12)~--- из определения~(4). Вычисляются оба варианта разности ($A \setminus B$, $B \setminus A$) и дополнения ($\overline{A}$, $\overline{B}$).
+
+Арифметические операции:
+\begin{align}
+k_{A + B}(x) &= \kA + \kB, \\
+k_{A - B}(x) &= \max\bigl(\kA - \kB,\; 0\bigr), \\
+k_{A \cdot B}(x) &= \kA \cdot \kB, \\
+k_{A / B}(x) &= \left\lfloor \frac{\kA}{\kB} \right\rfloor, \quad \kB > 0,
+\end{align}
+\noindent где $\lfloor \cdot \rfloor$~--- целая часть числа.
+
+Арифметическая разность~(14), в отличие от~(11), не зависит от универсума. При $\kB = 0$ деление~(16) не определено, элемент в результат не включается.
+
+\subsection{Бинарный код Грея}
+
+Код Грея разрядности $n$~--- последовательность всех $2^n$ двоичных наборов длины $n$, в которой соседние наборы различаются ровно в одном разряде~[1].
+
+Рекурсивное построение (отражённый код): $G_1$~--- наборы 0, 1; далее
+\begin{equation}
+G_{n+1} = \bigl(0 G_n,\; 1 G_n^{R}\bigr),
+\end{equation}
+\noindent где $G_n$~--- последовательность наборов кода Грея разрядности $n$;\\
+$G_n^{R}$~--- та же последовательность в обратном порядке.
+
+Наборы на стыке половин ($0g$ и $1g$) различаются одним разрядом.
+
+В программе используется нерекурсивная формула:
+\begin{equation}
+g(i) = i \oplus \lfloor i / 2 \rfloor,
+\end{equation}
+\noindent где $g(i)$~--- $i$-й набор кода Грея;\\
+$\oplus$~--- поразрядное сложение по модулю 2;\\
+$\lfloor i / 2 \rfloor$~--- число $i$, сдвинутое на один разряд вправо.
+
+Разряды кода: $g_j = b_j \oplus b_{j+1}$, где $b_j$~--- $j$-й разряд $i$. Код Грея для $n = 3$~--- в таблице~\ref{tab:gray}.
+
+\begin{table}[H]
+\caption{Бинарный код Грея разрядности 3}
+\label{tab:gray}
+\centering
+\begin{tabularx}{\textwidth}{|C|C|C|C|}
+\hline
+Номер $i$ & Двоичная запись $i$ & Код Грея $g(i)$ & Десятичное значение $g(i)$ \\ \hline
+0 & 000 & 000 & 0 \\ \hline
+1 & 001 & 001 & 1 \\ \hline
+2 & 010 & 011 & 3 \\ \hline
+3 & 011 & 010 & 2 \\ \hline
+4 & 100 & 110 & 6 \\ \hline
+5 & 101 & 111 & 7 \\ \hline
+6 & 110 & 101 & 5 \\ \hline
+7 & 111 & 100 & 4 \\ \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Универсум в данной работе}
+
+Универсум~--- все $2^n$ кодов Грея разрядности $n$. Кратность каждого элемента в универсуме:
+\begin{equation}
+k_U(x) = \max\bigl(|A|, |B|\bigr),
+\end{equation}
+\noindent где $|A|$, $|B|$~--- мощности мультимножеств, заданные пользователем.
+
+Так как $k_A(x) \leqslant |A|$, выбор~(19) гарантирует $k_A(x) \leqslant k_U(x)$ для обоих мультимножеств и неотрицательность дополнения~(10).
+
+% ======================= 2 =======================
+\section{Особенности реализации}
+
+\subsection{Структуры данных}
+
+Файлы: \code{gray\_code.cpp}~--- генерация кода Грея, заполнение, вывод и операции над мультимножествами; \code{lab1.cpp}~--- функция \code{main} и меню. Текст программы~--- в приложении~А.
+
+Структуры данных:
+\begin{dashlist}
+\item универсум~--- \code{int universe[size]}, $\code{size} = 2^n$; \code{universe[i]} хранит $g(i)$;
+\item мультимножество~--- \code{int multiset[m][2]}, строка~--- пара «код Грея, кратность», $m$ не превышает мощности;
+\item результат операции~--- \code{int res[size][2]} того же формата.
+\end{dashlist}
+
+Число заполненных строк хранится отдельно (\code{count1}, \code{count2}, \code{resCount}). Код может повторяться в нескольких строках; его кратность равна сумме кратностей этих строк (\code{getMultiplicity}). Все массивы~--- массивы переменной длины (расширение g++), размещаются в стеке.
+
+\subsection{Генерация универсума}
+
+\funchead{int conversionToGrayCode(int i)}
+Возвращает \code{i \^{} (i >> 1)} по формуле~(18).
+\begin{funcdesc}
+\item вход: \code{i}~--- номер набора, $i \geqslant 0$;
+\item выход: $g(i)$; при $i < 0$~--- сообщение об ошибке и завершение программы.
+\end{funcdesc}
+
+\funchead{bool fillTheUniverse(int uni[], int size)}
+Записывает $g(i)$ в \code{uni[i]} для $i = 0, \ldots, \code{size} - 1$ и выводит универсум.
+\begin{funcdesc}
+\item вход: \code{uni}~--- массив универсума, \code{size} $= 2^n$;
+\item выход: заполненный \code{uni}; \code{true}.
+\end{funcdesc}
+
+\subsection{Заполнение мультимножеств}
+
+\funchead{int manualMethodOfFillingMultiset(int uni[][2], int power, int size)}
+Цикл до исчерпания мощности \code{power}: ввод номера $i \in [0, \code{size})$ и кратности из $[1, \text{остаток мощности}]$; в очередную строку записывается пара $(g(i), \text{кратность})$.
+\begin{funcdesc}
+\item вход: \code{uni}~--- массив мультимножества, \code{power}~--- мощность, \code{size}~--- размер универсума;
+\item выход: заполненный \code{uni}; число строк.
+\end{funcdesc}
+
+\funchead{int automaticMethodOfFillingMultiset(int uni[][2], int power, int size)}
+То же, что ручное заполнение, но значения генерирует \code{mt19937} (зерно от \code{random\_device}): номер~--- равномерно из $[0, \code{size})$, кратность~--- из $[1, \text{остаток мощности}]$. Сумма кратностей равна \code{power}.
+\begin{funcdesc}
+\item вход и выход: как у \code{manualMethodOfFillingMultiset}.
+\end{funcdesc}
+
+\subsection{Вспомогательные функции}
+
+\funchead{int getMultiplicity(int ms[][2], int elementCount, int code)}
+Возвращает $k_A(x)$~--- сумму кратностей строк с кодом \code{code}. Сложность $O(m)$, $m$~--- число строк.
+\begin{funcdesc}
+\item вход: \code{ms}, \code{elementCount}~--- мультимножество и число строк; \code{code}~--- код Грея;
+\item выход: кратность; 0, если код отсутствует.
+\end{funcdesc}
+
+\funchead{void addElement(int res[][2], int \&resCount, int code, int multiplicity)}
+Добавляет строку (\code{code}, \code{multiplicity}) в \code{res}, если $\code{multiplicity} > 0$.
+\begin{funcdesc}
+\item вход: \code{res}, \code{resCount}~--- результат и число строк; \code{code}, \code{multiplicity}~--- код и кратность;
+\item выход: дополненный \code{res}, \code{resCount} увеличен на 1.
+\end{funcdesc}
+
+\funchead{void multisetOutput(int uni[][2], int elementCount)}
+Выводит строки «номер. Gray code: код; Multiplicity: кратность» или сообщение о пустом мультимножестве.
+
+\subsection{Операции над мультимножествами}
+
+Схема всех функций операций: для каждого \code{uni[i]} кратности в операндах вычисляет \code{getMultiplicity}, кратность результата~--- формула операции, запись~--- \code{addElement}. Возвращается число строк результата. Параметры:
+\begin{dashlist}
+\item \code{a}, \code{aCount}~--- первое мультимножество и число его строк;
+\item \code{b}, \code{bCount}~--- второе мультимножество и число его строк;
+\item \code{uni}, \code{size}~--- универсум и число его элементов;
+\item \code{universeMultiplicity}~--- $k_U(x)$ по формуле~(19);
+\item \code{res}~--- массив результата.
+\end{dashlist}
+
+Соответствие функций и формул~--- в таблице~\ref{tab:funcs}.
+
+\begin{table}[H]
+\caption{Функции операций над мультимножествами}
+\label{tab:funcs}
+\centering\small
+\begin{tabularx}{\textwidth}{|L|l|c|}
+\hline
+\multicolumn{1}{|c|}{Функция} & \multicolumn{1}{c|}{Операция} & Формула \\ \hline
+\code{multisetUnion} & Объединение $A \cup B$ & (8) \\ \hline
+\code{multisetIntersection} & Пересечение $A \cap B$ & (9) \\ \hline
+\code{multisetComplement} & Дополнение $\overline{A}$ & (10) \\ \hline
+\code{multisetDifference} & Разность $A \setminus B$ & (11) \\ \hline
+\code{multisetSymmetricDifference} & Симметрическая разность $A \mathbin{\triangle} B$ & (12) \\ \hline
+\code{multisetArithmeticSum} & Арифметическая сумма $A + B$ & (13) \\ \hline
+\code{multisetArithmeticDifference} & Арифметическая разность $A - B$ & (14) \\ \hline
+\code{multisetArithmeticProduct} & Арифметическое произведение $A \cdot B$ & (15) \\ \hline
+\code{multisetArithmeticDivision} & Арифметическое деление $A / B$ & (16) \\ \hline
+\end{tabularx}
+\end{table}
+
+Параметр \code{universeMultiplicity} принимают \code{multisetComplement} (один операнд), \code{multisetDifference} и \code{multisetSymmetricDifference}. $B \setminus A$ и $\overline{B}$ вычисляются теми же функциями с переставленными аргументами.
+
+\funchead{void allOperationsOutput(\ldots)}
+Вызывает функции всех 11 операций и выводит результаты.
+\begin{funcdesc}
+\item вход: оба мультимножества с числом строк, универсум, \code{size}, $k_U$;
+\item выход: результаты на экране.
+\end{funcdesc}
+
+Сложность операции: $2^n$ итераций по универсуму, в каждой~--- \code{getMultiplicity} по обоим операндам; итого $O\bigl(2^n \cdot (m_A + m_B)\bigr)$, где $m_A$, $m_B$~--- числа строк мультимножеств.
+
+\subsection{Пользовательское меню и проверка ввода}
+
+Порядок ввода в \code{main}:
+\begin{gostlist}
+\item разрядность $n$ от 0 до 30;
+\item для каждого мультимножества~--- способ заполнения (1~--- вручную, 2~--- автоматически) и мощность $\geqslant 0$;
+\item при ручном заполнении~--- номера и кратности элементов.
+\end{gostlist}
+
+Каждое значение запрашивается в цикле до попадания в допустимый диапазон (таблица~\ref{tab:checks}).
+
+\begin{table}[H]
+\caption{Проверки пользовательского ввода}
+\label{tab:checks}
+\centering\small
+\begin{tabularx}{\textwidth}{|L|c|L|}
+\hline
+\multicolumn{1}{|c|}{Вводимое значение} & Допустимый диапазон & \multicolumn{1}{c|}{Реакция на ошибку} \\ \hline
+Разрядность $n$ & $0 \leqslant n \leqslant 30$ & Сообщение и повторный ввод \\ \hline
+Пункт меню & 1 или 2 & Повторный вывод меню \\ \hline
+Мощность мультимножества & $\geqslant 0$ & Повторный запрос \\ \hline
+Номер элемента & $0 \leqslant i < 2^n$ & Сообщение и повторный ввод \\ \hline
+Кратность элемента & от 1 до оставшейся мощности & Сообщение и повторный ввод \\ \hline
+\end{tabularx}
+\end{table}
+
+Ограничение кратности остатком мощности гарантирует, что сумма кратностей равна заданной мощности.
+
+% ======================= 3 =======================
+\section{Результаты работы}
+
+Программа проверена на четырёх сценариях; на рисунках~--- вывод консоли.
+
+\subsection{Сценарий 1: ручное заполнение, корректный ввод}
+
+$n = 3$, ручное заполнение. $A$: мощность 6, номера 1, 3, 5 с кратностями 2, 1, 3. $B$: мощность 5, номера 3, 5, 6 с кратностями 2, 1, 2. По таблице~\ref{tab:gray}:
+\[
+A = \{1^2, 2^1, 7^3\}, \qquad B = \{2^2, 7^1, 5^2\}, \qquad k_U(x) = \max(6, 5) = 6.
+\]
+
+Ввод~--- рисунки~\ref{fig:s1_1}, \ref{fig:s1_2}; результаты~--- рисунки~\ref{fig:s1_3}, \ref{fig:s1_4}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr1_1.png}
+\caption{Сценарий 1: универсум и ручное заполнение первого мультимножества}
+\label{fig:s1_1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr1_2.png}
+\caption{Сценарий 1: ручное заполнение второго мультимножества}
+\label{fig:s1_2}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr1_3.png}
+\caption{Сценарий 1: объединение, пересечение, разности и симметрическая разность}
+\label{fig:s1_3}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr1_4.png}
+\caption{Сценарий 1: дополнения и арифметические операции}
+\label{fig:s1_4}
+\end{figure}
+
+Ручной расчёт по формулам~(8)--(16) (таблицы~\ref{tab:check1}, \ref{tab:check2}) совпадает с выводом программы. Прочерк: $k_B(x) = 0$, элемент в результат деления не входит.
+
+\begin{table}[H]
+\caption{Проверка теоретико-множественных операций (сценарий 1, $k_U = 6$)}
+\label{tab:check1}
+\centering\small
+\begin{tabularx}{\textwidth}{|C|C|C|C|C|C|C|C|C|C|}
+\hline
+Код $x$ & $k_A$ & $k_B$ & $A \cup B$ & $A \cap B$ & $A \setminus B$ & $B \setminus A$ & $A \triangle B$ & $\overline{A}$ & $\overline{B}$ \\ \hline
+1 & 2 & 0 & 2 & 0 & 2 & 0 & 2 & 4 & 6 \\ \hline
+2 & 1 & 2 & 2 & 1 & 1 & 2 & 2 & 5 & 4 \\ \hline
+7 & 3 & 1 & 3 & 1 & 3 & 1 & 3 & 3 & 5 \\ \hline
+5 & 0 & 2 & 2 & 0 & 0 & 2 & 2 & 6 & 4 \\ \hline
+0, 3, 6, 4 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 6 & 6 \\ \hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\caption{Проверка арифметических операций (сценарий 1)}
+\label{tab:check2}
+\centering\small
+\begin{tabularx}{\textwidth}{|C|C|C|C|C|C|C|}
+\hline
+Код $x$ & $k_A$ & $k_B$ & $A + B$ & $A - B$ & $A \cdot B$ & $A / B$ \\ \hline
+1 & 2 & 0 & 2 & 2 & 0 & --- \\ \hline
+2 & 1 & 2 & 3 & 0 & 2 & 0 \\ \hline
+7 & 3 & 1 & 4 & 2 & 3 & 3 \\ \hline
+5 & 0 & 2 & 2 & 0 & 0 & 0 \\ \hline
+0, 3, 6, 4 & 0 & 0 & 0 & 0 & 0 & --- \\ \hline
+\end{tabularx}
+\end{table}
+
+Различие разностей для элемента 7: теоретико-множественная~--- $\min(3, 6 - 1) = 3$ (ограничение дополнением $\overline{B}$), арифметическая~--- $3 - 1 = 2$.
+
+\subsection{Сценарий 2: автоматическое заполнение}
+
+$n = 4$, автоматическое заполнение, мощности 7 и 5. Получено $A = \{12^6, 7^1\}$, $B = \{12^4, 7^1\}$, $k_U = 7$ (рисунки~\ref{fig:s2_1}--\ref{fig:s2_4}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr2_1.png}
+\caption{Сценарий 2: универсум разрядности 4 и автоматическое заполнение мультимножеств}
+\label{fig:s2_1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr2_2.png}
+\caption{Сценарий 2: объединение, пересечение, разности и симметрическая разность}
+\label{fig:s2_2}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr2_3.png}
+\caption{Сценарий 2: дополнения}
+\label{fig:s2_3}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr2_4.png}
+\caption{Сценарий 2: арифметические операции}
+\label{fig:s2_4}
+\end{figure}
+
+Суммы кратностей равны мощностям: $6 + 1 = 7$, $4 + 1 = 5$. Для элемента 12: $A \setminus B = \min(6, 7 - 4) = 3$, $B \setminus A = \min(4, 7 - 6) = 1$~--- по формуле~(11). Кратности суммы и произведения (10 и 24) превышают $k_U$: формулы~(13), (15) универсумом не ограничены.
+
+\subsection{Сценарий 3: некорректный ввод}
+
+Проверка диапазонов (таблица~\ref{tab:checks}). Введены:
+\begin{dashlist}
+\item разрядность $-3$, 35, затем 2;
+\item пункты меню 0, 5, затем 1;
+\item мощность $-4$, затем 3;
+\item номер 9, $-1$ (диапазон $[0, 4)$), затем 2;
+\item кратность 5, 0 (диапазон $[1, 3]$), затем 3.
+\end{dashlist}
+
+$B$: мощность 4, автоматическое заполнение (рисунки~\ref{fig:s3_1}, \ref{fig:s3_2}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr3_1.png}
+\caption{Сценарий 3: обработка некорректного ввода}
+\label{fig:s3_1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr3_2.png}
+\caption{Сценарий 3: результаты операций после корректного ввода}
+\label{fig:s3_2}
+\end{figure}
+
+Каждое недопустимое значение отклонено с повторным запросом; в мультимножество не записано. Итог: $A = \{3^3\}$, $3 = g(2)$.
+
+\subsection{Сценарий 4: пустое мультимножество}
+
+$n = 2$; $A$ мощности 0; $B = \{3^3\}$ (автоматически); $k_U = 3$ (рисунки~\ref{fig:s4_1}, \ref{fig:s4_2}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr4_1.png}
+\caption{Сценарий 4: пустое первое мультимножество и теоретико-множественные операции}
+\label{fig:s4_1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth,height=0.72\textheight,keepaspectratio]{scr4_2.png}
+\caption{Сценарий 4: дополнения и арифметические операции}
+\label{fig:s4_2}
+\end{figure}
+
+Результаты: $A \cup B = B$, $A \cap B = \varnothing$, $A \setminus B = \varnothing$, $B \setminus A = B$, $\overline{A} = U$. Элемент 3 отсутствует в $\overline{B}$: $3 - 3 = 0$. Деление даёт пустое мультимножество: $\lfloor 0 / 3 \rfloor = 0$.
+
+% ======================= ЗАКЛЮЧЕНИЕ =======================
+\structsection{ЗАКЛЮЧЕНИЕ}
+
+Реализовано:
+\begin{gostlist}
+\item генерация универсума из $2^n$ кодов Грея по формуле $g(i) = i \oplus \lfloor i/2 \rfloor$;
+\item ручное и автоматическое заполнение двух мультимножеств заданной мощности;
+\item 11 операций: объединение, пересечение, две разности, симметрическая разность, два дополнения, арифметические сумма, разность, произведение, деление;
+\item проверка диапазонов ввода.
+\end{gostlist}
+
+Корректность подтверждена четырьмя сценариями (ручной и автоматический ввод, некорректный ввод, пустое мультимножество) и ручным расчётом.
+
+Достоинства:
+\begin{dashlist}
+\item генерация кода Грея~--- $O(1)$ на элемент, без рекурсии;
+\item единая схема операций через функцию кратности: каждая функция прямо соответствует формуле;
+\item память под мультимножество зависит от мощности, а не от размера универсума;
+\item повторные записи одного элемента учитываются суммированием кратностей.
+\end{dashlist}
+
+Недостатки:
+\begin{dashlist}
+\item нет проверки формата ввода: нечисловое значение переводит \code{cin} в состояние ошибки, программа зацикливается;
+\item массивы переменной длины в стеке: при $n \geqslant 18$ или большой мощности~--- аварийное завершение из-за переполнения стека, хотя допускается $n \leqslant 30$;
+\item $k_U = \max(|A|, |B|)$ не задаётся пользователем; при большом $k_U$ разность $A \setminus B$ вырождается в $A$ (сценарий~1);
+\item повторные записи элемента при выводе не объединяются;
+\item кратности суммы и произведения могут превышать $k_U$.
+\end{dashlist}
+
+Масштабирование: память под универсум и массив результата~--- $O(2^n)$, время одной операции~--- $O\bigl(2^n \cdot (m_A + m_B)\bigr)$; увеличение $n$ на 1 удваивает размер универсума. Пути улучшения:
+\begin{dashlist}
+\item динамическая память (\code{std::vector}) для больших $n$;
+\item хранение мультимножества как массива кратностей по номеру элемента универсума: доступ к кратности $O(1)$, время операции $O(2^n)$;
+\item проверка \code{cin.fail()} с очисткой потока.
+\end{dashlist}
+
+% ======================= ИСТОЧНИКИ =======================
+\structsection{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
+
+\begin{enumerate}[label=\arabic*, leftmargin=*, labelindent=\parindent, itemsep=0pt, align=left]
+\item Новиков, Ф.\,А. Дискретная математика для программистов : учебник для вузов / Ф.\,А.~Новиков.~--- 3-е изд.~--- Санкт-Петербург : Питер, 2009.~--- 384~с.
+\end{enumerate}
+
+% ======================= ПРИЛОЖЕНИЕ =======================
+\clearpage
+\phantomsection
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ А Текст программы}
+\begin{center}
+\textbf{ПРИЛОЖЕНИЕ А}\\
+\textbf{Код программы}
+\end{center}
+
+\noindent Файл \code{gray\_code.cpp}:
+\lstinputlisting{../gray_code.cpp}
+
+\noindent Файл \code{lab1.cpp}:
+\lstinputlisting{../lab1.cpp}
+
+\end{document}
