@@ -4,9 +4,13 @@
 # Кроме папок (чтобы git мог заходить внутрь)
 !*/
 
-# Кроме исходников и PDF
+# Кроме исходников, файлов сборки, отчёта и рисунков
 !*.cpp
+!*.hpp
+!CMakeLists.txt
 !*.tex
 !*.pdf
-!.gitignore
 !*.png
+!*.py
+!lab1/report/scenarios/*.txt
+!.gitignore
