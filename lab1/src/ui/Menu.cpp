@@ -85,9 +85,9 @@ Menu::Menu():carrier(std::make_shared<CodeSet>(0)),universe(carrier),a(carrier),
              universe_ready(false),a_ready(false),b_ready(false){}
 
 void Menu::run(){
-    std::cout << COMMANDS << std::endl;
+    // список команд выводится перед каждым приглашением
     while(true){
-        std::cout << std::endl;
+        std::cout << std::endl << COMMANDS << std::endl;
         char command = read_letter("> ", "uabtomhq", false);
         if(command == 'q') return;
         if(!is_available(command)) continue;
@@ -280,8 +280,7 @@ std::vector<Multiset> Menu::compute_operations() const{
 }
 
 void Menu::show_help() const{
-    std::cout << COMMANDS << std::endl
-              << "запись {000×2, 011×1}: код Грея × кратность, {} - пустое; kU, kA, kB - кратности в U, A, B" << std::endl;
+    std::cout << "запись {000×2, 011×1}: код Грея × кратность, {} - пустое; kU, kA, kB - кратности в U, A, B" << std::endl;
     for(size_t i = 0; i < OPERATION_COUNT; i++){
         std::cout << pad_right(OPERATIONS[i].notation, 7) << pad_right(OPERATIONS[i].formula, 26)
                   << OPERATIONS[i].title << std::endl;

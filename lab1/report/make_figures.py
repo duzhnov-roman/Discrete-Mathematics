@@ -27,8 +27,9 @@ def transcript(scenario):
 
 
 def blocks(lines):
-    """действия пользователя: от ввода команды «> » после пустой строки до следующей пустой строки"""
-    starts = [i for i in range(1, len(lines)) if lines[i].startswith('> ') and lines[i - 1] == '']
+    """действия пользователя: от строки списка команд перед «> » до следующей пустой строки"""
+    starts = [i - 1 for i in range(1, len(lines))
+              if lines[i].startswith('> ') and lines[i - 1].startswith('u - универсум')]
     res = []
     for s in starts:
         end = s + 1
