@@ -37,40 +37,46 @@ public:
 // мультимножество над носителем — функция кратности: counts[i] = k(x_i), x_i — i-й код Грея;
 // универсум U и мультимножества A, B — объекты этого класса над общим носителем
 class Multiset{
-    std::shared_ptr<const CodeSet> carrier;
-    std::vector<size_t> counts;
+    std::shared_ptr<const CodeSet> carrier; // общий носитель
+    std::vector<size_t> counts; // кратности
 
-    void check_same_carrier(const Multiset& other) const;
-    void check_within(const Multiset& universe) const;
+    // Сравнивает, одинаковый ли указатель у носителей
+    void check_same_carrier(const Multiset& other) const; // - CarrierMismatchError
+    // доп проверка на подмножество
+    void check_within(const Multiset& universe) const; // - NotSubmultisetError
 
 public:
-    explicit Multiset(std::shared_ptr<const CodeSet> carrier);   // все кратности равны нулю
+    explicit Multiset(std::shared_ptr<const CodeSet> carrier); // все кратности равны нулю
 
-    const CodeSet& get_carrier() const;
-    size_t size() const;                       // число элементов носителя
-    size_t get_count(size_t i) const;
+    const CodeSet& get_carrier() const; // Ссылка на носитель
+    size_t size() const; // число элементов носителя
+    size_t get_count(size_t i) const; // получить кратность элемента
     void set_count(size_t i, size_t count);
-    size_t cardinality() const;                // сумма кратностей
+    size_t cardinality() const; // сумма кратностей - мощность
     bool is_submultiset_of(const Multiset& other) const;
 
-    Multiset unite(const Multiset& b) const;
-    Multiset intersect(const Multiset& b) const;
-    Multiset complement(const Multiset& universe) const;
-    Multiset difference(const Multiset& b, const Multiset& universe) const;
-    Multiset symmetric_difference(const Multiset& b, const Multiset& universe) const;
+    // === операции ===
 
-    Multiset arithmetic_sum(const Multiset& b, const Multiset& universe) const;
-    Multiset arithmetic_difference(const Multiset& b) const;
-    Multiset arithmetic_product(const Multiset& b, const Multiset& universe) const;
-    Multiset arithmetic_division(const Multiset& b) const;
+    //теор. мн.
+    Multiset unite(const Multiset& b) const; // объединение
+    Multiset intersect(const Multiset& b) const; // пересечение
+    Multiset complement(const Multiset& universe) const; // дополнение
+    Multiset difference(const Multiset& b, const Multiset& universe) const; // разность
+    Multiset symmetric_difference(const Multiset& b, const Multiset& universe) const; // симметрическая разность
 
-    friend Multiset random_submultiset(const Multiset& bound, size_t cardinality);
+    //арифм.
+    Multiset arithmetic_sum(const Multiset& b, const Multiset& universe) const; // сумма
+    Multiset arithmetic_difference(const Multiset& b) const; // разность
+    Multiset arithmetic_product(const Multiset& b, const Multiset& universe) const; // произведение
+    Multiset arithmetic_division(const Multiset& b) const; // деление
+
+    friend Multiset random_submultiset(const Multiset& bound, size_t cardinality); // автоматическое заполнение
 };
 
-// равновероятный выбор cardinality единиц кратности из bound (урновая схема без возвращения)
+// случайное подмультимножество bound мощности cardinality: cardinality раз случайный
+// незаполненный элемент получает +1 к кратности
 Multiset random_submultiset(const Multiset& bound, size_t cardinality);
 
-// запись вида {000(2), 011(1)}; элементы с нулевой кратностью не выводятся;
-// после limit элементов вывод обрывается с указанием, сколько элементов не показано
+// запись вида {000×2, 011×1}; элементы с нулевой кратностью не выводятся;
 void print_multiset(std::ostream& out, const Multiset& multiset, size_t limit);
 std::ostream& operator<<(std::ostream& out, const Multiset& multiset);

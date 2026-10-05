@@ -21,15 +21,14 @@ int main(int argc, char* argv[]){
         seed = static_cast<unsigned>(std::strtoul(argv[2], nullptr, 10));
     }
     seed_random(seed);
-    std::cout << "Зерно генератора: " << seed << " (повторить запуск: lab1 --seed " << seed << ")" << std::endl
-              << std::endl;
+    std::cout << "seed = " << seed << "  (тот же запуск: lab1 --seed " << seed << ")" << std::endl;
 
     try{
         Menu menu;
         menu.run();
     }
     catch(const InputClosedError&){
-        std::cout << std::endl << "Ввод завершён." << std::endl;
+        std::cout << std::endl << "Ввод закончился, сеанс завершён." << std::endl;
     }
     catch(const std::exception& error){
         std::cout << "Внутренняя ошибка: " << error.what() << std::endl;

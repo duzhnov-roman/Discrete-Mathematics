@@ -12,7 +12,7 @@ void Multiset::check_same_carrier(const Multiset& other) const{
 }
 
 void Multiset::check_within(const Multiset& universe) const{
-    check_same_carrier(universe);
+    // носители сравнивает сам is_submultiset_of
     if(!is_submultiset_of(universe)){
         throw NotSubmultisetError();
     }
@@ -78,7 +78,7 @@ Multiset Multiset::complement(const Multiset& universe) const{
     check_within(universe);
     Multiset res(carrier);
     for(size_t i = 0; i < counts.size(); i++){
-        res.counts[i] = universe.counts[i] - counts[i];   // >= 0, так как A ⊆ U
+        res.counts[i] = universe.counts[i] - counts[i]; // гарантированно >= 0, т.к. A подмножество U
     }
     return res;
 }
@@ -133,24 +133,27 @@ Multiset Multiset::arithmetic_division(const Multiset& b) const{
 
 
 Multiset random_submultiset(const Multiset& bound, size_t cardinality){
-    size_t left = bound.cardinality();   // единиц, которые ещё не просмотрены
-    if(cardinality > left){
+    if(cardinality > bound.cardinality()){
         throw CardinalityOverflowError();
     }
-    // элемент x_i — это bound[i] одинаковых шаров в урне; единицы просматриваются по очереди,
-    // и каждая берётся с вероятностью need / left (алгоритм S, Кнут, т. 2, п. 3.4.2)
     Multiset res(bound.carrier);
-    size_t need = cardinality;
-    for(size_t i = 0; i < bound.counts.size() && need > 0; i++){
-        size_t taken = 0;
-        for(size_t unit = 0; unit < bound.counts[i] && need > 0; unit++){
-            if(need == left || random_below(left) < need){
-                taken++;
-                need--;
-            }
-            left--;
+    // номера элементов, кратность которых в res ещё меньше, чем в bound
+    std::vector<size_t> free;
+    free.reserve(bound.counts.size());
+    for(size_t i = 0; i < bound.counts.size(); i++){
+        if(bound.counts[i] > 0) free.push_back(i);
+    }
+    // cardinality раз: случайный элемент со свободным местом получает +1 к кратности;
+    // список не пустеет раньше времени, так как свободных мест |bound| - step > 0
+    for(size_t step = 0; step < cardinality; step++){
+        size_t j = random_below(free.size());
+        size_t i = free[j];
+        res.counts[i]++;
+        if(res.counts[i] == bound.counts[i]){
+            // элемент заполнен: на его место в списке встаёт последний, список короче на 1
+            free[j] = free.back();
+            free.pop_back();
         }
-        res.counts[i] = taken;
     }
     return res;
 }
@@ -169,7 +172,7 @@ void print_multiset(std::ostream& out, const Multiset& multiset, size_t limit){
             continue;
         }
         if(shown > 0) out << ", ";
-        out << carrier.get_code(i) << "(" << count << ")";
+        out << carrier.get_code(i) << "×" << count;
         shown++;
     }
     if(hidden > 0) out << ", ... ещё " << hidden << " эл.";

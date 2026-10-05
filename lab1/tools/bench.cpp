@@ -27,23 +27,20 @@ static double measure(Action action){
 
 int main(){
     seed_random(1);
-    std::cout << " n   код Грея   U случайно   U по мощности   заполнение A   13 операций   наибольшее, мс" << std::endl;
+    std::cout << " n   код Грея   универсум   заполнение A   13 операций   наибольшее, мс" << std::endl;
     for(size_t depth = 10; depth <= MAX_DEPTH + 2; depth++){
         std::shared_ptr<const CodeSet> carrier;
         double t_code = measure([&]{ carrier = std::make_shared<CodeSet>(depth); });
 
         // наихудший случай: все кратности равны MAX_MULTIPLICITY
         Multiset universe(carrier);
-        double t_random = measure([&]{ universe = random_universe(carrier, MAX_MULTIPLICITY); });
-        size_t low = min_universe_cardinality(carrier->size());
-        size_t high = max_universe_cardinality(carrier->size());
-        double t_by_cardinality = measure([&]{ universe = universe_with_cardinality(carrier, (low + high) / 2); });
-        for(size_t i = 0; i < universe.size(); i++) universe.set_count(i, MAX_MULTIPLICITY);
+        double t_universe = measure([&]{ universe = uniform_universe(carrier, MAX_MULTIPLICITY); });
 
-        // при мощности |U| / 2 алгоритм просматривает почти все |U| единиц
+        // заполнение делает |A| шагов, поэтому дольше всего при |A| = |U|
         Multiset a(carrier);
         Multiset b(carrier);
-        double t_fill = measure([&]{ a = random_submultiset(universe, universe.cardinality() / 2); });
+        double t_fill = measure([&]{ a = random_submultiset(universe, universe.cardinality()); });
+        a = random_submultiset(universe, universe.cardinality() / 2);
         b = random_submultiset(universe, universe.cardinality() / 3);
 
         size_t checksum = 0;
@@ -57,10 +54,10 @@ int main(){
                       + a.arithmetic_division(b).cardinality() + b.arithmetic_division(a).cardinality();
         });
 
-        double worst = std::max({t_code, t_random, t_by_cardinality, t_fill, t_operations});
+        double worst = std::max({t_code, t_universe, t_fill, t_operations});
         std::cout << std::fixed << std::setprecision(1) << std::setw(2) << depth
-                  << std::setw(11) << t_code << std::setw(13) << t_random << std::setw(16) << t_by_cardinality
-                  << std::setw(15) << t_fill << std::setw(14) << t_operations << std::setw(17) << worst
+                  << std::setw(11) << t_code << std::setw(12) << t_universe << std::setw(15) << t_fill
+                  << std::setw(14) << t_operations << std::setw(17) << worst
                   << (worst < 1000 ? "" : "  > 1 с") << std::endl;
         if(checksum == 0) std::cout << "";   // не даёт компилятору выбросить операции
     }

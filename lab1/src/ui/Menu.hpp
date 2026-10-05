@@ -7,12 +7,6 @@
 #include <vector>
 
 class Menu{
-    struct Operation{
-        std::string title;       // название операции
-        std::string notation;    // обозначение, например A ∪ B
-        Multiset result;
-    };
-
     std::shared_ptr<const CodeSet> carrier;   // общий носитель U, A и B
     Multiset universe;
     Multiset a;
@@ -21,19 +15,20 @@ class Menu{
     bool a_ready;
     bool b_ready;
 
-    void print_menu() const;
-    bool require_universe() const;
-    bool require_multisets() const;
+    void print_panel() const;
+    bool is_available(char command) const;
 
     void create_universe();
-    bool read_universe_manually(Multiset& target) const;
     void fill_multiset(Multiset& multiset, bool& ready, const std::string& name);
     bool fill_manual(Multiset& target, size_t cardinality, const std::string& name) const;
+    bool parse_manual_line(const std::string& line, const Multiset& target, size_t left,
+                           std::vector<size_t>& indices, std::vector<size_t>& counts) const;
 
-    std::vector<Operation> compute_operations() const;
-    void show_table(bool with_multisets) const;
+    std::vector<Multiset> compute_operations() const;
+    void show_help() const;
+    void show_table() const;
     void show_operations() const;
-    void show_operations_table() const;
+    void show_matrix() const;
 
 public:
     Menu();
