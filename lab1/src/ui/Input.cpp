@@ -49,13 +49,13 @@ static void report_bad_number(const std::string& text, size_t min, size_t max){
     std::string range = "[" + std::to_string(min) + ".." + std::to_string(max) + "]";
     size_t value = 0;
     if(text.empty()){
-        std::cout << "  ! пустая строка: нужно целое число из " << range << std::endl;
+        std::cout << "! пустая строка: нужно целое число из " << range << std::endl;
     }
     else if(parse_number(text, value)){
-        std::cout << "  ! " << value << " не входит в " << range << std::endl;
+        std::cout << "! " << value << " не входит в " << range << std::endl;
     }
     else{
-        std::cout << "  ! «" << text << "» не целое неотрицательное число; нужно число из " << range << std::endl;
+        std::cout << "! «" << text << "» не целое неотрицательное число; нужно число из " << range << std::endl;
     }
 }
 
@@ -97,10 +97,10 @@ char read_letter(const std::string& prompt, const std::string& letters, bool all
             if(letters.find(letter) != std::string::npos) return letter;
         }
         if(line.empty()){
-            std::cout << "  ! пустая строка: введите одну из букв " << listed << std::endl;
+            std::cout << "! пустая строка: введите одну из букв " << listed << std::endl;
         }
         else{
-            std::cout << "  ! «" << line << "» не команда; допустимы буквы " << listed << std::endl;
+            std::cout << "! «" << line << "» не команда; допустимы буквы " << listed << std::endl;
         }
     }
 }

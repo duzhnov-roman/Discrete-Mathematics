@@ -7,10 +7,13 @@
 # Кроме исходников, файлов сборки, отчёта и рисунков
 !*.cpp
 !*.hpp
-!CMakeLists.txt
+!Makefile
 !*.tex
 !*.pdf
 !*.png
 !*.py
 !lab1/report/scenarios/*.txt
 !.gitignore
+
+# Папки сборки CMake
+build/

@@ -15,7 +15,6 @@ class Menu{
     bool a_ready;
     bool b_ready;
 
-    void print_panel() const;
     bool is_available(char command) const;
 
     void create_universe();

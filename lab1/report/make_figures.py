@@ -27,38 +27,15 @@ def transcript(scenario):
 
 
 def blocks(lines):
-    """действия пользователя: от ввода команды после панели меню до верхней рамки следующей панели"""
-    starts = [i for i in range(1, len(lines))
-              if lines[i].startswith('команда > ') and lines[i - 1].startswith('└')]
+    """действия пользователя: от ввода команды «> » после пустой строки до следующей пустой строки"""
+    starts = [i for i in range(1, len(lines)) if lines[i].startswith('> ') and lines[i - 1] == '']
     res = []
     for s in starts:
         end = s + 1
-        while end < len(lines) and not lines[end].startswith('┌'):
+        while end < len(lines) and lines[end] != '':
             end += 1
         res.append((s, end))
     return res
-
-
-# линии рамок и блоки консоль Windows рисует сама на всю клетку, без зазоров между строками:
-# для каждого символа - отрезки из центра клетки в стороны (l, r, u, d)
-BOX = {'─': 'lr', '│': 'ud', '┌': 'rd', '┐': 'ld', '└': 'ru', '┘': 'lu', '├': 'udr', '┤': 'udl',
-       '═': '=', '█': '#', '░': '.'}
-
-
-def draw_box(d, ch, px, py):
-    x0, y0, x1, y1 = px, py, px + CW, py + LH
-    cx, cy = round(px + CW / 2), round(py + LH / 2)
-    kind = BOX[ch]
-    if kind == '#':
-        d.rectangle([x0, y0 + 4, x1, y1 - 4], fill=FG)
-    elif kind == '.':
-        d.rectangle([x0, y0 + 4, x1, y1 - 4], fill=tuple(b + (f - b) // 4 for b, f in zip(BG, FG)))
-    elif kind == '=':
-        d.line([x0, cy - 2, x1, cy - 2], fill=FG); d.line([x0, cy + 2, x1, cy + 2], fill=FG)
-    else:
-        ends = {'l': (x0, cy), 'r': (x1, cy), 'u': (cx, y0), 'd': (cx, y1)}
-        for side in kind:
-            d.line([(cx, cy), ends[side]], fill=FG)
 
 
 def render(lines, path):
@@ -76,9 +53,7 @@ def render(lines, path):
     for y, r in enumerate(rows):
         for x, ch in enumerate(r):
             px, py = PAD + x * CW, PAD + y * LH
-            if ch in BOX:
-                draw_box(d, ch, px, py)
-            elif ord(ch) in CMAP:
+            if ord(ch) in CMAP:
                 d.text((px, py), ch, font=MAIN, fill=FG)
             else:
                 # как консоль Windows: недостающий глиф берётся из Segoe UI Symbol и центрируется по ячейке
@@ -116,7 +91,7 @@ def head(name, scenario, upto_regex):
 
 
 # сценарий 1: случайная кратность, автоматическое заполнение (зерно 1)
-head('fig_s1_start', 's1_auto', r'^команда > h$')
+head('fig_s1_start', 's1_auto', r'^> h$')
 figure('fig_s1_help', 's1_auto', 0, 0)
 figure('fig_s1_universe', 's1_auto', 1, 1)
 figure('fig_s1_fill', 's1_auto', 2, 3)
@@ -136,8 +111,8 @@ figure('fig_s3_ops', 's3_bounds', 4, 4)
 figure('fig_s3_optable', 's3_bounds', 5, 5)
 # сценарий 4: некорректный ввод (зерно 4)
 figure('fig_s4_order', 's4_errors', 0, 1)
-figure('fig_s4_menu', 's4_errors', 2, 2, cut_to=r'^══ Новый')
-figure('fig_s4_universe', 's4_errors', 2, 2, cut_from=r'^══ Новый')
+figure('fig_s4_menu', 's4_errors', 2, 2, cut_to=r'^n \[')
+figure('fig_s4_universe', 's4_errors', 2, 2, cut_from=r'^n \[')
 figure('fig_s4_rest', 's4_errors', 3, 4)
 # сценарий 5: n = 0 (зерно 5)
 figure('fig_s5_universe', 's5_zero', 0, 0)
