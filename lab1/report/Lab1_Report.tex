@@ -20,9 +20,13 @@
 \usepackage{titlesec}
 \titleformat{\section}{\normalfont\bfseries}{\thesection}{0.6em}{}
 \titleformat{\subsection}{\normalfont\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalfont\bfseries}{\thesubsubsection}{0.6em}{}
 \titlespacing*{\section}{\parindent}{0pt}{12pt}
 \titlespacing*{\subsection}{\parindent}{12pt}{6pt}
+\titlespacing*{\subsubsection}{\parindent}{12pt}{6pt}
 \newcommand{\sectionbreak}{\clearpage}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
 
 \newcommand{\structsection}[1]{%
   \clearpage
@@ -64,8 +68,6 @@
 \newcolumntype{C}{>{\centering\arraybackslash}X}
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
 \usepackage{enumitem}
-\newlist{dashlist}{itemize}{1}
-\setlist[dashlist]{label=--, leftmargin=*, labelindent=\parindent, nosep}
 \newlist{steps}{enumerate}{1}
 \setlist[steps]{label=\arabic*), leftmargin=*, labelindent=\parindent, nosep}
 
@@ -78,23 +80,32 @@
 \captionsetup[listing]{justification=raggedright, singlelinecheck=false, hypcap=false}
 \newcommand{\codefile}[4][]{%
   \par\needspace{5\baselineskip}\medskip\begin{singlespace}\captionof{listing}{#2}\label{#3}%
-  \VerbatimInput[#1]{#4}\end{singlespace}\medskip}
+  \VerbatimInput[firstnumber=1,#1]{#4}\end{singlespace}\medskip}
 
-\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\definecolor{linkblue}{RGB}{0,0,150}
+\usepackage[colorlinks=true, linkcolor=linkblue, citecolor=linkblue, urlcolor=linkblue,
+            bookmarksdepth=2]{hyperref}
 \pagestyle{plain}
+
+% ссылка, в которой кликабельно и слово, и номер: \lnk{метка}{рис.} -> «рис. 3»
+\newcommand{\lnk}[2]{\hyperref[#1]{#2~\ref*{#1}}}
+\newcommand{\figref}[1]{\lnk{fig:#1}{рис.}}
+\newcommand{\tabref}[1]{\lnk{tab:#1}{табл.}}
 
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\us}{\_\allowbreak{}}
 \newcommand{\kA}{k_A(x)}
 \newcommand{\kB}{k_B(x)}
 \newcommand{\kU}{k_U(x)}
+\newcommand{\Nset}{\{0, 1, 2, \ldots\}}
 \AtBeginDocument{\renewcommand{\setminus}{\mathbin{\backslash}}}
 
 \makeatletter
 \renewenvironment{thebibliography}[1]
   {\structsection{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}%
    \renewcommand\@biblabel[1]{##1.}%
-   \list{}{\leftmargin=0pt \labelwidth=0pt \labelsep=0.5em
+   \list{\@biblabel{\theenumiv}}{\leftmargin=0pt \labelwidth=0pt \labelsep=0.5em
            \itemindent=\dimexpr\parindent+1.2em\relax \itemsep=0pt
            \usecounter{enumiv}\let\p@enumiv\@empty
            \renewcommand\theenumiv{\arabic{enumiv}}}}
@@ -109,6 +120,13 @@
   \caption{#2}
   \label{fig:#1}
   \end{figure}}
+
+\newcommand{\GC}{listings/src/core/GrayCode}
+\newcommand{\MS}{listings/src/core/Multiset}
+\newcommand{\RN}{listings/src/core/Random}
+\newcommand{\UV}{listings/src/core/Universe}
+\newcommand{\IN}{listings/src/ui/Input}
+\newcommand{\MN}{listings/src/ui/Menu}
 
 \begin{document}
 
@@ -151,7 +169,10 @@
 \end{titlepage}
 
 \setcounter{page}{2}
+\begingroup
+\hypersetup{linkcolor=black}
 \tableofcontents
+\endgroup
 
 % ============================================================
 \structsection{ВВЕДЕНИЕ}
@@ -165,27 +186,19 @@
 % ============================================================
 \section{Математическое описание}
 
-\subsection{Множества и мультимножества}
+\subsection{Множества и мультимножества}\label{sec:mset}
 
 Множество~--- это любая определённая совокупность объектов. Объекты, из которых составлено множество, называются его элементами. Элементы множества различны и отличимы друг от друга~\cite{novikov}. Запись $x \in X$ означает, что $x$~--- элемент множества $X$.
 
-Универсум $U$~--- заранее зафиксированное множество всех элементов, допустимых в конкретной задаче; каждое рассматриваемое в задаче множество является подмножеством $U$~\cite{novikov}.
-
-Пусть $X = \{x_1, \ldots, x_N\}$~--- конечное множество, $a_1, \ldots, a_N$~--- неотрицательные целые числа. Мультимножество $A$ над $X$~--- совокупность элементов $X$, в которой $x_i$ содержится ровно $a_i$ раз~\cite{novikov}:
-\begin{equation}\label{eq:mset}
-A = \langle a_1(x_1), a_2(x_2), \ldots, a_N(x_N) \rangle .
-\end{equation}
-Множество $X$~--- носитель $A$, число $a_i$~--- кратность элемента $x_i$~\cite{novikov, vostrov}.
-
-Мультимножество $A$ над носителем $X$ задаётся функцией кратности, которая каждому элементу носителя ставит в соответствие число его вхождений в $A$:
+Мультимножеством $A$ над конечным множеством $X$ называется функция кратности
 \begin{equation}\label{eq:kfun}
-k_A \colon X \to \{0, 1, 2, \ldots\}, \qquad k_A(x_i) = a_i, \quad i = 1, \ldots, N.
+k_A \colon X \to \Nset .
 \end{equation}
-Элемент $x$ принадлежит $A$ тогда и только тогда, когда $\kA > 0$.
+Множество $X$ называется носителем $A$, значение $\kA$ называется кратностью элемента $x$ в $A$ и равно числу вхождений $x$ в $A$~\cite{novikov, vostrov}. Элемент $x$ принадлежит $A$ тогда и только тогда, когда $\kA > 0$. В отчёте и в выводе программы мультимножество записывается в фигурных скобках перечнем пар «элемент${}\times{}$кратность» для элементов с ненулевой кратностью, например \code{\{000×2, 011×1\}}; если все кратности равны нулю, записывается \code{\{\}}.
 
-Мощность мультимножества~--- сумма кратностей элементов носителя~\cite{novikov}:
+Мощность мультимножества~--- сумма значений его функции кратности~\cite{novikov}:
 \begin{equation}\label{eq:card}
-|A| = \sum_{i=1}^{N} k_A(x_i).
+|A| = \sum_{x \in X} \kA .
 \end{equation}
 
 Мультимножество $A$~--- подмультимножество мультимножества $B$ над тем же носителем, если
@@ -194,91 +207,71 @@ A \subseteq B \iff \kA \leqslant \kB \;\; \text{для всех } x \in X.
 \end{equation}
 Из~\eqref{eq:card} и~\eqref{eq:sub}: если $A \subseteq B$, то $|A| \leqslant |B|$.
 
-Универсум мультимножеств~--- мультимножество $U$ над носителем $X$, для которого $A \subseteq U$ для каждого рассматриваемого в задаче мультимножества $A$. По~\eqref{eq:sub} это означает, что $0 \leqslant \kA \leqslant \kU$ для всех $x \in X$, то есть $\kU$~--- наибольшая кратность, с которой элемент $x$ может входить в мультимножества задачи. Отсюда $0 \leqslant |A| \leqslant |U|$.
+Универсумом называется мультимножество $U$ над носителем $X$, для которого $A \subseteq U$ для каждого рассматриваемого в задаче мультимножества $A$ над $X$. По~\eqref{eq:sub} это означает, что $0 \leqslant \kA \leqslant \kU$ для всех $x \in X$, то есть $\kU$~--- наибольшая кратность, с которой элемент $x$ может входить в мультимножества задачи. Отсюда $0 \leqslant |A| \leqslant |U|$.
 
-В программе носитель~--- множество слов бинарного кода Грея разрядности $n$ (подраздел~\ref{sec:gray}); при $n \geqslant 1$ число слов $N = 2^n$. Все слова входят в универсум с одной и той же кратностью $k$, которую вводит пользователь; если вместо $k$ введена пустая строка, программа выбирает $k$ случайно от 1 до 100:
+В программе носитель $X$~--- множество слов бинарного кода Грея разрядности $n$ (\lnk{sec:gray}{подраздел}); при $n \geqslant 1$ число слов $N = 2^n$. Универсум $U$~--- мультимножество над $X$, функция кратности которого на всех словах равна одному и тому же числу $k$, $1 \leqslant k \leqslant 100$. Число $k$ вводит пользователь; если вместо $k$ введена пустая строка, программа выбирает $k$ случайно от 1 до 100:
 \begin{equation}\label{eq:univ}
 \kU = k \;\; \text{для всех } x \in X, \qquad |U| = k \cdot 2^n, \qquad n \geqslant 1.
 \end{equation}
-Мультимножества $A$ и $B$ строятся как подмультимножества $U$, поэтому $\kA \leqslant k$, $\kB \leqslant k$ и $0 \leqslant |A|, |B| \leqslant |U|$. При $n = 0$ алгоритм из~\cite{novikov} выдаёт один код~--- код пустого подмножества ($2^0 = 1$); в программе принято, что код Грея при $n = 0$ пуст: $N = 0$, $|U| = 0$.
+Мультимножества $A$ и $B$ строятся как подмультимножества $U$, поэтому по~\eqref{eq:sub} $\kA \leqslant k$ и $\kB \leqslant k$ для всех $x \in X$, а по~\eqref{eq:card} $0 \leqslant |A|, |B| \leqslant |U|$. При $n = 0$ алгоритм из~\cite{novikov} выдаёт один код~--- код пустого подмножества ($2^0 = 1$); в программе принято, что код Грея при $n = 0$ пуст: $N = 0$, $|U| = 0$.
 
 \subsection{Операции над мультимножествами}\label{sec:ops}
 
-Операции над множествами определяются так~\cite{novikov}:
+Для подмножеств $A$ и $B$ множества $X$, которое здесь играет роль универсального множества, операции определяются так~\cite{novikov}:
 \begin{gather*}
 A \cup B = \{x \mid x \in A \lor x \in B\}, \qquad A \cap B = \{x \mid x \in A \;\&\; x \in B\}, \\
-A \setminus B = \{x \mid x \in A \;\&\; x \notin B\}, \qquad A \mathbin{\triangle} B = (A \cup B) \setminus (A \cap B), \qquad \overline{A} = U \setminus A .
+A \setminus B = \{x \mid x \in A \;\&\; x \notin B\}, \qquad A \mathbin{\triangle} B = (A \cup B) \setminus (A \cap B), \qquad \overline{A} = X \setminus A .
 \end{gather*}
 
-Для мультимножеств $A$ и $B$ над общим носителем $X$, где $A \subseteq U$ и $B \subseteq U$, кратность элемента $x$ в результате каждой операции вычисляется в программе по кратностям этого же элемента в $A$, $B$ и $U$. Объединение, пересечение и дополнение:
+Результат каждой операции над мультимножествами $A \subseteq U$ и $B \subseteq U$ является мультимножеством над тем же носителем $X$, поэтому по определению~\eqref{eq:kfun} он задаётся своей функцией кратности. Она обозначается индексом с обозначением операции: для $C = A \cup B$ это $k_C = k_{A \cup B} \colon X \to \Nset$. В программе значение функции кратности результата на элементе $x$ вычисляется по кратностям этого элемента в $A$, $B$ и $U$. Объединение, пересечение и дополнения:
 \begin{gather}
 k_{A \cup B}(x) = \max\bigl(\kA,\; \kB\bigr), \label{eq:union}\\
 k_{A \cap B}(x) = \min\bigl(\kA,\; \kB\bigr), \label{eq:inter}\\
-k_{\overline{A}}(x) = \kU - \kA . \label{eq:compl}
+k_{\overline{A}}(x) = \kU - \kA , \label{eq:compl}\\
+k_{\overline{B}}(x) = \kU - \kB . \label{eq:complb}
 \end{gather}
-Кратность~\eqref{eq:compl} неотрицательна, так как $\kA \leqslant \kU$.
+Кратности~\eqref{eq:compl} и~\eqref{eq:complb} неотрицательны, так как $\kA \leqslant \kU$ и $\kB \leqslant \kU$.
 
 Для множеств из определений разности и дополнения следует равенство
 \begin{equation}\label{eq:diffset}
 A \setminus B = A \cap \overline{B},
 \end{equation}
-так как обе части состоят из элементов $U$, которые принадлежат $A$ и не принадлежат $B$. В программе разность мультимножеств вычисляется именно в форме~\eqref{eq:diffset}. Подставляя в~\eqref{eq:diffset} формулы пересечения~\eqref{eq:inter} и дополнения~\eqref{eq:compl}, получаем
-\begin{equation}\label{eq:diff}
-k_{A \setminus B}(x) = \min\bigl(\kA,\; k_{\overline{B}}(x)\bigr) = \min\bigl(\kA,\; \kU - \kB\bigr),
-\end{equation}
-и аналогично $k_{B \setminus A}(x) = \min\bigl(\kB,\; \kU - \kA\bigr)$.
+так как обе части состоят из элементов $X$, которые принадлежат $A$ и не принадлежат $B$. В программе разность мультимножеств вычисляется именно в форме~\eqref{eq:diffset}. Подставляя в~\eqref{eq:diffset} формулы пересечения~\eqref{eq:inter} и дополнения~\eqref{eq:complb}, получаем
+\begin{gather}
+k_{A \setminus B}(x) = \min\bigl(\kA,\; k_{\overline{B}}(x)\bigr) = \min\bigl(\kA,\; \kU - \kB\bigr), \label{eq:diff}\\
+k_{B \setminus A}(x) = \min\bigl(\kB,\; k_{\overline{A}}(x)\bigr) = \min\bigl(\kB,\; \kU - \kA\bigr). \label{eq:diffba}
+\end{gather}
 
 Для множеств из определения симметрической разности следует равенство
 \begin{equation}\label{eq:symset}
 A \mathbin{\triangle} B = (A \setminus B) \cup (B \setminus A),
 \end{equation}
-так как обе части состоят из элементов, которые принадлежат ровно одному из множеств $A$ и $B$. В программе симметрическая разность мультимножеств вычисляется именно в форме~\eqref{eq:symset}. Подставляя в~\eqref{eq:symset} формулы объединения~\eqref{eq:union} и разности~\eqref{eq:diff}, получаем
+так как обе части состоят из элементов, которые принадлежат ровно одному из множеств $A$ и $B$. В программе симметрическая разность мультимножеств вычисляется именно в форме~\eqref{eq:symset}. Подставляя в~\eqref{eq:symset} формулы объединения~\eqref{eq:union} и разностей~\eqref{eq:diff}, \eqref{eq:diffba}, получаем
 \begin{equation}\label{eq:sym}
 k_{A \triangle B}(x) = \max\Bigl(\min\bigl(\kA,\; \kU - \kB\bigr),\; \min\bigl(\kB,\; \kU - \kA\bigr)\Bigr).
 \end{equation}
 Кратность~\eqref{eq:sym} в общем случае не равна $|\kA - \kB|$: при $\kU = 3$, $\kA = 1$, $\kB = 2$ она равна $\max(\min(1, 1), \min(2, 2)) = 2$.
 
-Арифметические операции выполняются над кратностями:
+Арифметические операции вычисляются над значениями функций кратности:
 \begin{gather}
 k_{A + B}(x) = \min\bigl(\kA + \kB,\; \kU\bigr), \label{eq:asum}\\
 k_{A - B}(x) = \max\bigl(\kA - \kB,\; 0\bigr), \label{eq:adiff}\\
+k_{B - A}(x) = \max\bigl(\kB - \kA,\; 0\bigr), \label{eq:adiffba}\\
 k_{A \cdot B}(x) = \min\bigl(\kA \cdot \kB,\; \kU\bigr), \label{eq:aprod}\\
 k_{A / B}(x) =
 \begin{cases}
 \kA \operatorname{div} \kB, & \kB > 0,\\
 0, & \kB = 0,
-\end{cases} \label{eq:adiv}
+\end{cases} \label{eq:adiv}\\
+k_{B / A}(x) =
+\begin{cases}
+\kB \operatorname{div} \kA, & \kA > 0,\\
+0, & \kA = 0,
+\end{cases} \label{eq:adivba}
 \end{gather}
-где $\operatorname{div}$~--- целочисленное деление. Сумма и произведение могут превысить $\kU$, поэтому ограничены этой величиной сверху; разность ограничена снизу нулём, так как кратность не может быть отрицательной. Операции $B - A$ и $B / A$ получаются перестановкой $A$ и~$B$. Разность~\eqref{eq:diff} и арифметическая разность~\eqref{eq:adiff}~--- разные операции: при $\kU = 3$, $\kA = 2$, $\kB = 1$ имеем $k_{A \setminus B}(x) = 2$ и $k_{A - B}(x) = 1$.
+где $\operatorname{div}$~--- целочисленное деление. Сумма и произведение могут превысить $\kU$, поэтому ограничены этой величиной сверху; разность ограничена снизу нулём, так как по определению~\eqref{eq:kfun} кратность неотрицательна. Разность~\eqref{eq:diff} и арифметическая разность~\eqref{eq:adiff}~--- разные операции: при $\kU = 3$, $\kA = 2$, $\kB = 1$ имеем $k_{A \setminus B}(x) = 2$ и $k_{A - B}(x) = 1$.
 
-Формулы всех операций в том виде, в каком они вычисляются в программе, собраны в таблице~\ref{tab:ops}.
-
-{\small
-\begin{longtable}{|P{5.0cm}|P{2.7cm}|P{7.3cm}|}
-\caption{Операции над мультимножествами}\label{tab:ops}\\
-\hline
-\textbf{Операция} & \textbf{Обозначение} & \textbf{Кратность элемента $x$ в результате}\\\hline
-\endfirsthead
-\hline
-\textbf{Операция} & \textbf{Обозначение} & \textbf{Кратность элемента $x$ в результате}\\\hline
-\endhead
-Объединение & $A \cup B$ & $\max(\kA, \kB)$ \\\hline
-Пересечение & $A \cap B$ & $\min(\kA, \kB)$ \\\hline
-Разность & $A \setminus B$ & $\min(\kA,\, \kU - \kB)$ \\\hline
-Разность & $B \setminus A$ & $\min(\kB,\, \kU - \kA)$ \\\hline
-Симметрическая разность & $A \mathbin{\triangle} B$ & $\max(k_{A \setminus B}(x),\, k_{B \setminus A}(x))$ \\\hline
-Дополнение & $\overline{A}$ & $\kU - \kA$ \\\hline
-Дополнение & $\overline{B}$ & $\kU - \kB$ \\\hline
-Арифметическая сумма & $A + B$ & $\min(\kA + \kB,\, \kU)$ \\\hline
-Арифметическая разность & $A - B$ & $\max(\kA - \kB,\, 0)$ \\\hline
-Арифметическая разность & $B - A$ & $\max(\kB - \kA,\, 0)$ \\\hline
-Арифметическое произведение & $A \cdot B$ & $\min(\kA \cdot \kB,\, \kU)$ \\\hline
-Арифметическое деление & $A / B$ & $\kA \operatorname{div} \kB$; $0$ при $\kB = 0$ \\\hline
-Арифметическое деление & $B / A$ & $\kB \operatorname{div} \kA$; $0$ при $\kA = 0$ \\\hline
-\end{longtable}
-}
-
-Для множеств пересечение, объединение и разность подмножеств универсума являются его подмножествами~\cite{novikov}. Для мультимножеств выполняется аналогичное утверждение: если $A \subseteq U$ и $B \subseteq U$, то результаты всех операций~\eqref{eq:union}--\eqref{eq:adiv} являются подмультимножествами $U$: максимум и минимум чисел, не превосходящих $\kU$, не превосходят $\kU$; $0 \leqslant \kU - \kA \leqslant \kU$; обе разности не больше уменьшаемого: $\min(\kA, \ldots) \leqslant \kA$ и $\max(\kA - \kB, 0) \leqslant \kA$; сумма и произведение ограничены величиной $\kU$ по определению; при $\kB \geqslant 1$ частное $\kA \operatorname{div} \kB \leqslant \kA$, а при $\kB = 0$ оно равно нулю.
+Для множеств пересечение, объединение и разность подмножеств универсального множества являются его подмножествами~\cite{novikov}. Для мультимножеств выполняется аналогичное утверждение: если $A \subseteq U$ и $B \subseteq U$, то по~\eqref{eq:sub} результаты всех операций~\eqref{eq:union}--\eqref{eq:adivba} являются подмультимножествами $U$. Максимум и минимум чисел, не превосходящих $\kU$, не превосходят $\kU$; $0 \leqslant \kU - \kA \leqslant \kU$; обе разности не больше уменьшаемого: $\min(\kA, \ldots) \leqslant \kA$ и $\max(\kA - \kB, 0) \leqslant \kA$; сумма и произведение ограничены величиной $\kU$ по определению; при $\kB \geqslant 1$ частное $\kA \operatorname{div} \kB \leqslant \kA$, а при $\kB = 0$ оно равно нулю. Для операций $B \setminus A$, $B - A$ и $B / A$ рассуждение то же с перестановкой $A$ и $B$.
 
 \subsection{Бинарный код Грея}\label{sec:gray}
 
@@ -294,11 +287,13 @@ p(i) = Q(i) - 1 = \text{количество нулей на конце двои
 \begin{equation}\label{eq:gray}
 g_0 = 0, \qquad g_i = g_{i-1} \oplus 2^{p(i)}, \quad i = 1, 2, \ldots, 2^n - 1,
 \end{equation}
-где $\oplus$~--- побитовое исключающее ИЛИ. Код строит функция \code{generate\us{}gray\us{}code}, номер разряда $p(i)$ вычисляет функция \code{changed\us{}bit}. Алгоритм в программе выполняется так:
+где $\oplus$~--- побитовое исключающее ИЛИ.
+
+На вход алгоритма подаётся разрядность $n$, $0 \leqslant n \leqslant 19$; на выходе получается последовательность слов кода Грея $g_0, g_1, \ldots, g_{N-1}$, которая образует носитель $X$. Код строит функция \code{generate\us{}gray\us{}code} (\lnk{fn:generate}{п.}), номер разряда $p(i)$ вычисляет функция \code{changed\us{}bit} (\lnk{fn:changed}{п.}). Алгоритм в программе выполняется так:
 \begin{steps}
 \item если $n = 0$, возвращается пустая последовательность, и алгоритм завершается;
 \item если $n \geqslant 1$, в последовательность записывается код $g_0 = 0$;
-\item для $i = 1, 2, \ldots, 2^n - 1$: число $i$ делится на 2, пока результат чётный, число делений равно $p(i)$; в текущем коде инвертируется разряд $p(i)$, и полученный код $g_i$ дописывается в последовательность;
+\item для $i = 1, 2, \ldots, 2^n - 1$: число $i$ делится на 2, пока оно чётно, число делений равно $p(i)$; в текущем коде инвертируется разряд $p(i)$, и полученный код $g_i$ дописывается в последовательность;
 \item последовательность возвращается.
 \end{steps}
 
@@ -306,84 +301,64 @@ g_0 = 0, \qquad g_i = g_{i-1} \oplus 2^{p(i)}, \quad i = 1, 2, \ldots, 2^n - 1,
 \begin{equation}\label{eq:cost}
 \sum_{i=1}^{2^n - 1} \bigl(p(i) + 1\bigr) = \sum_{t=0}^{n-1} \bigl(2^{n-t} - 1\bigr) = 2^{n+1} - n - 2 < 2 \cdot 2^n.
 \end{equation}
-Кроме проверок, на каждом из $2^n - 1$ шагов выполняются одно инвертирование разряда и одна запись кода. Трудоёмкость алгоритма~--- $O(2^n)$, память~--- $2^n$ чисел под получаемую последовательность (носитель в программе хранит ещё $2^n$ чисел обратной таблицы, подраздел~2.3). Пошаговое выполнение алгоритма при $n = 3$ приведено в таблице~\ref{tab:gray3}; оно совпадает с примером выполнения алгоритма~1.2 в~\cite{novikov} и с выводом программы на рисунке~\ref{fig:s1_universe}.
+Кроме проверок, на каждом из $2^n - 1$ шагов выполняются одно инвертирование разряда и одна запись кода. Трудоёмкость алгоритма~--- $O(2^n)$, память~--- $2^n$ чисел под получаемую последовательность.
 
-\begin{table}[htbp]
-\caption{Пошаговое построение кода Грея при $n = 3$}\label{tab:gray3}
-\centering
-\begin{tabular}{|c|c|c|c|c|c|}
-\hline
-$i$ & $i$ в двоичной записи & $Q(i)$ & $p(i)$ & $g_{i-1}$ & $g_i$ \\\hline
-0 & 000 &~--- &~--- &~--- & 000 \\\hline
-1 & 001 & 1 & 0 & 000 & 001 \\\hline
-2 & 010 & 2 & 1 & 001 & 011 \\\hline
-3 & 011 & 1 & 0 & 011 & 010 \\\hline
-4 & 100 & 3 & 2 & 010 & 110 \\\hline
-5 & 101 & 1 & 0 & 110 & 111 \\\hline
-6 & 110 & 2 & 1 & 111 & 101 \\\hline
-7 & 111 & 1 & 0 & 101 & 100 \\\hline
-\end{tabular}
-\end{table}
+\subsection{Алгоритм автоматического заполнения}\label{sec:fill}
 
-\FloatBarrier
-\subsection{Алгоритм автоматического заполнения}
-
-Автоматическое заполнение строит случайное подмультимножество $R \subseteq U$ заданной мощности $m$, где $0 \leqslant m \leqslant |U|$. В программе его выполняет функция \code{random\us{}submultiset}. Алгоритм:
+Автоматическое заполнение строит случайное подмультимножество универсума заданной мощности. На вход алгоритма подаются универсум $U$ и мощность $m$, $0 \leqslant m \leqslant |U|$; на выходе получается мультимножество $R$ над носителем $X$, для которого $R \subseteq U$ и $|R| = m$. В программе алгоритм выполняет функция \code{random\us{}submultiset} (\lnk{fn:random}{п.}). Алгоритм:
 \begin{steps}
-\item создаётся мультимножество $R$ над носителем $U$ с нулевыми кратностями и список $F$ элементов, кратность которых в $R$ ещё меньше, чем в $U$; в начале в $F$ входят все $x$, у которых $\kU > 0$;
+\item создаётся мультимножество $R$ над $X$ с $k_R(x) = 0$ для всех $x \in X$ и список $F$ элементов $x$, для которых $k_R(x) < \kU$; в начале в $F$ входят все $x$, у которых $\kU > 0$;
 \item $m$ раз выполняется: из списка $F$ равновероятно выбирается элемент $x$, его кратность $k_R(x)$ увеличивается на~1; если $k_R(x)$ стала равна $\kU$, элемент $x$ удаляется из $F$: на его место в списке ставится последний элемент, и список укорачивается на~1;
 \item возвращается $R$.
 \end{steps}
 
 Шаги нумеруются $s = 0, 1, \ldots, m - 1$. Перед шагом $s$ в $R$ распределено $s$ единиц, поэтому свободных мест остаётся $|U| - s > 0$, так как $s < m \leqslant |U|$. Следовательно, список $F$ не пуст ни на одном шаге, кратность ни одного элемента не превышает $\kU$, $R \subseteq U$ и $|R| = m$.
 
-До начала шагов выполняется $O(2^n)$ операций: вычисление $|U|$ для проверки условия $m \leqslant |U|$ (сумма $2^n$ кратностей), создание $R$ с $2^n$ нулевыми кратностями и построение списка $F$. Каждый из $m$ шагов состоит из выбора случайной позиции в $F$, увеличения одной кратности и, возможно, удаления элемента переносом последнего; эти действия выполняются за $O(1)$, причём выбор случайного числа~--- в среднем за $O(1)$. Трудоёмкость алгоритма~--- $O(2^n + m)$, дополнительная память~--- $O(2^n)$ под $R$ и $F$.
+До начала шагов выполняется $O(2^n)$ операций: вычисление $|U|$ для проверки условия $m \leqslant |U|$ (сумма $2^n$ кратностей), создание $R$ с $2^n$ нулевыми кратностями и построение списка $F$. Каждый из $m$ шагов состоит из выбора случайной позиции в $F$, увеличения одной кратности и, возможно, удаления элемента переносом последнего; эти действия выполняются за $O(1)$, причём выбор случайного числа~--- в среднем за $O(1)$. Так как $m \leqslant |U| = k \cdot 2^n$ и $k \leqslant 100$, число шагов не превосходит $100 \cdot 2^n$, поэтому трудоёмкость алгоритма~--- $O(2^n)$, дополнительная память~--- $O(2^n)$ под $R$ и $F$.
 
 % ============================================================
 \section{Особенности реализации}
 
-\subsection{Средства разработки и структура программы}
+\subsection{Средства разработки и структура программы}\label{sec:tools}
 
-Программа написана на языке C++ стандарта C++14. Для сборки в проекте есть файл \code{CMakeLists.txt}: он задаёт стандарт C++14 и две цели~--- саму программу \code{lab1} и программу замера времени \code{bench}. Для отчёта программа собиралась компилятором g++ (MinGW.org GCC 6.3.0, 32-разрядная сборка) напрямую:
+Программа написана на языке C++ стандарта C++14. Для сборки в проекте есть файл \code{CMakeLists.txt} (\lnk{lst:cmake}{листинг}): он задаёт стандарт C++14 и две цели~--- саму программу \code{lab1} и программу замера времени \code{bench}.
+
+\codefile{Файл сборки \code{CMakeLists.txt}}{lst:cmake}{listings/CMakeLists.txt}
+
+Для отчёта программа собиралась компилятором g++ (MinGW.org GCC 6.3.0, 32-разрядная сборка) напрямую:
 \begin{center}
 \code{g++ -std=c++14 -O2 -Wall -Wextra -Isrc src/main.cpp src/ui/*.cpp src/core/*.cpp -o lab1.exe}
 \end{center}
 Предупреждений при компиляции нет. Программа запускается без параметров либо с параметром \code{--seed N}: тогда генератор случайных чисел получает зерно $N$, и запуск с тем же вводом повторяется полностью. Без параметра зерно получает функция \code{make\us{}seed}. В обоих случаях зерно выводится первой строкой.
 
-Исходный код разделён на ядро (\code{src/core}), где реализованы код Грея и мультимножества, и интерфейс (\code{src/ui}), где реализованы ввод и меню. Ядро не выводит ничего на экран, а интерфейс не вычисляет операции сам. Назначение файлов приведено в таблице~\ref{tab:files}.
+Исходный код разделён на ядро (\code{src/core}), где реализованы код Грея и мультимножества, и интерфейс (\code{src/ui}), где реализованы ввод и меню. Ядро не выводит ничего на экран, а интерфейс не вычисляет операции сам. Назначение файлов и подразделы, в которых описаны их функции, приведены в \tabref{files}.
 
 {\small
-\begin{longtable}{|P{4.9cm}|P{8.4cm}|P{1.8cm}|}
+\begin{longtable}{|P{4.9cm}|P{8.0cm}|P{2.2cm}|}
 \caption{Файлы проекта}\label{tab:files}\\
 \hline
-\textbf{Файл} & \textbf{Назначение} & \textbf{Листинг}\\\hline
+\textbf{Файл} & \textbf{Назначение} & \textbf{Подраздел}\\\hline
 \endfirsthead
 \hline
-\textbf{Файл} & \textbf{Назначение} & \textbf{Листинг}\\\hline
+\textbf{Файл} & \textbf{Назначение} & \textbf{Подраздел}\\\hline
 \endhead
-\code{CMakeLists.txt} & сборка программы \code{lab1} и программы замера \code{bench} & \ref{lst:cmake} \\\hline
-\code{src/main.cpp} & функция \code{main}: кодировка консоли, зерно, запуск меню, перехват исключений & \ref{lst:main} \\\hline
-\code{src/ui/Input.hpp} & объявления функций ввода, класс \code{Input\allowbreak{}Closed\allowbreak{}Error} & \ref{lst:inputh} \\\hline
-\code{src/ui/Input.cpp} & чтение строк и чисел с проверкой & \ref{lst:inputc} \\\hline
-\code{src/ui/Menu.hpp} & объявление класса \code{Menu} & \ref{lst:menuh} \\\hline
-\code{src/ui/Menu.cpp} & меню, заполнение мультимножеств, вывод таблицы, операций и матрицы & \ref{lst:menuc} \\\hline
-\code{src/core/GrayCode.hpp} & константы \code{MAX\us{}DEPTH}, \code{MAX\us{}TYPE\us{}DEPTH}, классы исключений, класс \code{Code\allowbreak{}Set} & \ref{lst:grayh} \\\hline
-\code{src/core/GrayCode.cpp} & генерация кода Грея, перевод кода в строку, методы \code{Code\allowbreak{}Set} & \ref{lst:grayc} \\\hline
-\code{src/core/Multiset.hpp} & класс \code{Multiset}, классы исключений & \ref{lst:multih} \\\hline
-\code{src/core/Multiset.cpp} & операции над мультимножествами, автоматическое заполнение, печать & \ref{lst:multic} \\\hline
-\code{src/core/Random.hpp} & объявления функций генератора случайных чисел & \ref{lst:randh} \\\hline
-\code{src/core/Random.cpp} & генератор \code{std::mt19937} и функции работы с ним & \ref{lst:randc} \\\hline
-\code{src/core/Universe.hpp} & константа \code{MAX\us{}MULTIPLICITY}, класс \code{Invalid\allowbreak{}Multiplicity\allowbreak{}Error} & \ref{lst:univh} \\\hline
-\code{src/core/Universe.cpp} & построение равномерного универсума & \ref{lst:univc} \\\hline
-\code{tools/bench.cpp} & замер времени самых долгих действий при разных $n$ & \ref{lst:bench} \\\hline
+\code{CMakeLists.txt} & сборка программы \code{lab1} и программы замера \code{bench} & \ref{sec:tools} \\\hline
+\code{src/core/GrayCode.hpp}, \code{src/core/GrayCode.cpp} & константы разрядности, исключения кода Грея, генерация кода Грея, класс \code{CodeSet} & \ref{sec:mgray} \\\hline
+\code{src/core/Random.hpp}, \code{src/core/Random.cpp} & генератор \code{std::mt19937} и функции работы с ним & \ref{sec:mrand} \\\hline
+\code{src/core/Multiset.hpp}, \code{src/core/Multiset.cpp} & исключения мультимножеств, класс \code{Multiset}, автоматическое заполнение, вывод & \ref{sec:mmulti} \\\hline
+\code{src/core/Universe.hpp}, \code{src/core/Universe.cpp} & константа \code{MAX\us{}MULTIPLICITY}, построение равномерного универсума & \ref{sec:muniv} \\\hline
+\code{src/ui/Input.hpp}, \code{src/ui/Input.cpp} & чтение строк и чисел с проверкой & \ref{sec:minput} \\\hline
+\code{src/ui/Menu.hpp}, \code{src/ui/Menu.cpp} & класс \code{Menu}: команды, заполнение мультимножеств, вывод таблицы, операций и матрицы & \ref{sec:mmenu} \\\hline
+\code{src/main.cpp} & функция \code{main} & \ref{sec:mmain} \\\hline
+\code{tools/bench.cpp} & замер времени самых долгих действий при разных $n$ & \ref{sec:mbench} \\\hline
 \end{longtable}
 }
 
 \subsection{Допущения и входные данные}
 
-При реализации приняты следующие допущения. Универсум равномерный: все слова кода Грея входят в него с одной и той же кратностью~$k$, которую задаёт пользователь или выбирает программа. Разрядность ограничена условием $0 \leqslant n \leqslant 19$, кратность~--- условием $1 \leqslant k \leqslant 100$; выбор этих пределов обоснован в подразделе~\ref{sec:limits}. При $n = 0$ код Грея по соглашению из подраздела~1.1 считается пустым, поэтому универсум пуст, кратность не запрашивается, а мощности $A$ и $B$ могут быть только нулевыми. Мультимножества $A$ и $B$ всегда строятся как подмультимножества универсума, поэтому их мощности лежат в пределах от 0 до $|U|$. Пересоздание универсума сбрасывает уже заданные $A$ и~$B$, так как они построены над прежним носителем. Если заполнение отменено, прежнее мультимножество сохраняется.
+При реализации приняты следующие допущения. Универсум равномерный: все слова кода Грея входят в него с одной и той же кратностью $\kU = k$, которую задаёт пользователь или выбирает программа. Разрядность ограничена условием $0 \leqslant n \leqslant 19$, кратность~--- условием $1 \leqslant k \leqslant 100$; выбор этих пределов обоснован в \lnk{sec:limits}{подразделе}. При $n = 0$ код Грея по соглашению из \lnk{sec:mset}{подраздела} считается пустым, поэтому универсум пуст, кратность не запрашивается, а мощности $A$ и $B$ могут быть только нулевыми. Мультимножества $A$ и $B$ всегда строятся как подмультимножества универсума, поэтому их мощности лежат в пределах от 0 до $|U|$. Пересоздание универсума сбрасывает уже заданные $A$ и~$B$, так как они построены над прежним носителем. Если заполнение отменено, прежнее мультимножество сохраняется.
 
-Входные данные программы, их допустимые значения и реакция программы на некорректный и пустой ввод приведены в таблице~\ref{tab:input}.
+Входные данные программы, их допустимые значения и реакция программы на некорректный и пустой ввод приведены в \tabref{input}.
 
 {\small
 \begin{longtable}{|P{3.0cm}|P{4.6cm}|P{7.4cm}|}
@@ -396,161 +371,481 @@ $i$ & $i$ в двоичной записи & $Q(i)$ & $p(i)$ & $g_{i-1}$ & $g_i$
 \endhead
 Команда меню & одна буква из \code{u a b t o m h q}, регистр не важен & сообщение «не команда» или «пустая строка» и повторный запрос; если команда недоступна, выводится, чего не хватает \\\hline
 Разрядность $n$ & целое от 0 до 19 & повторный запрос с причиной: пустая строка, не число, число вне отрезка \\\hline
-Кратность $k$ & целое от 1 до 100; при $n = 0$ не запрашивается & пустая строка~--- случайное $k$ от 1 до 100; иначе повторный запрос с причиной \\\hline
+Кратность $\kU = k$ & целое от 1 до 100; при $n = 0$ не запрашивается & пустая строка~--- случайное $k$ от 1 до 100; иначе повторный запрос с причиной \\\hline
 Мощности $|A|$, $|B|$ & целое от 0 до $|U|$ & пустая строка~--- случайная мощность от 0 до $|U|$; иначе повторный запрос \\\hline
 Способ заполнения & \code{r}~--- случайно, \code{m}~--- вручную & пустая строка~--- отмена, мультимножество не меняется; иначе повторный запрос \\\hline
 Строка ручного ввода & пары \code{код:кратность} через пробел, код из $n$ символов 0 и 1, кратность от 1 & строка отклоняется целиком с указанием причины; пустая строка~--- отмена \\\hline
 \end{longtable}
 }
 
-\subsection{Структуры данных}
+% ------------------------------------------------------------
+\subsection{Код Грея (\texorpdfstring{\code{GrayCode.hpp}, \code{GrayCode.cpp}}{GrayCode.hpp, GrayCode.cpp})}\label{sec:mgray}
 
-Носитель мультимножеств хранится в классе \code{CodeSet}. Его поля: \code{depth}~--- разрядность $n$; \code{codes}~--- вектор \code{std::vector<size\us{}t>} из $2^n$ слов кода Грея в порядке генерации; \code{positions}~--- вектор той же длины, где \code{positions[c]} равно номеру слова $c$ в \code{codes}. Так как в коде Грея встречаются все $2^n$ слов, номер есть у любого слова, и введённое вручную слово переводится в номер элемента за $O(n)$ операций, без поиска по последовательности. Слово хранится как число, а в строку из нулей и единиц переводится только при выводе.
+Файлы содержат константы, ограничивающие разрядность, классы исключений кода Грея, функции генерации кода Грея и перевода слова в строку, а также класс \code{CodeSet}, который хранит носитель $X$.
 
-Мультимножество хранится в классе \code{Multiset} как функция кратности, то есть массивом кратностей элементов носителя; такое представление мультимножества описано в~\cite{novikov}. Поле \code{carrier} типа \code{std::shared\us{}ptr<const CodeSet>} указывает на общий носитель, а поле \code{counts} типа \code{std::vector<size\us{}t>} содержит кратности: \code{counts[i]}~--- кратность $i$-го слова кода Грея. Универсум $U$, мультимножества $A$ и $B$ и все результаты операций~--- объекты этого класса над одним носителем. Операции над мультимножествами с разными носителями запрещены: это проверяется сравнением указателей.
+\subsubsection{Константы \code{MAX\us{}DEPTH} и \code{MAX\us{}TYPE\us{}DEPTH}}
 
-Состояние программы хранит класс \code{Menu}. В нём есть указатель на носитель \code{carrier}, мультимножества \code{universe}, \code{a}, \code{b} и флаги \code{universe\us{}ready}, \code{a\us{}ready}, \code{b\us{}ready}, которые показывают, что соответствующее мультимножество уже задано. Список операций для вывода хранится в массиве \code{OPERATIONS} из 13 структур \code{OperationInfo} с полями \code{title} (название), \code{notation} (обозначение) и \code{formula} (формула для справки).
+Константа \code{MAX\us{}DEPTH} $= 19$~--- наибольшая разрядность, которую можно ввести в меню; её выбор обоснован в \lnk{sec:limits}{подразделе}. Константа \code{MAX\us{}TYPE\us{}DEPTH} $=$ \code{sizeof(size\us{}t) * 8 - 1}~--- наибольшая разрядность, при которой число $2^n$ помещается в тип \code{size\us{}t}; в 32-разрядной сборке она равна 31. Объявления констант приведены в \lnk{lst:grayconst}{листинге}.
 
-Ошибки передаются исключениями. Все классы исключений наследуются от \code{std::runtime\us{}error}. От класса \code{GrayCodeError} наследуются \code{InvalidDepthError} и \code{CodeIndexError}. От класса \code{MultisetError} наследуются \code{MultisetIndexError}, \code{CarrierMismatchError}, \code{NotSubmultisetError}, \code{CardinalityOverflowError} и \code{InvalidMultiplicityError}. Отдельно стоит \code{InputClosedError}, который означает конец ввода.
+\codefile[firstline=7, lastline=9]{Константы \code{MAX\us{}DEPTH} и \code{MAX\us{}TYPE\us{}DEPTH}}{lst:grayconst}{\GC.hpp}
 
-\subsection{Функции и методы}\label{sec:funcs}
+\subsubsection{Классы исключений кода Грея}
 
-Функции и методы ядра описаны в таблицах~\ref{tab:fgray}--\ref{tab:frand}, функции ввода~--- в таблице~\ref{tab:finput}, методы класса \code{Menu}~--- в таблице~\ref{tab:fmenu}, служебные функции вывода и функция \code{main}~--- в таблице~\ref{tab:fserv}. Для каждой функции указаны назначение, входные данные, возвращаемое значение и исключения, которые она может выбросить.
+Класс \code{GrayCodeError}~--- наследник \code{std::runtime\us{}error} и базовый класс ошибок кода Грея; его конструктор принимает текст сообщения. От него наследуются два класса. Исключение \code{InvalidDepthError} с сообщением «2\^{}n не помещается в size\us{}t» выбрасывается при разрядности больше \code{MAX\us{}TYPE\us{}DEPTH}. Исключение \code{CodeIndexError} с сообщением «номер кода вне последовательности» выбрасывается при обращении к слову с номером $i \geqslant N$. Классы приведены в \lnk{lst:grayerr}{листинге}.
 
-{\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{longtable}{|P{3.4cm}|P{5.0cm}|P{4.5cm}|P{2.5cm}|}
-\caption{Функции и методы файла \code{GrayCode.cpp}}\label{tab:fgray}\\
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endfirsthead
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endhead
-\code{changed\us{}bit} (static) & определяет номер разряда $p(i)$, который меняется на $i$-м шаге генерации: делит $i$ на 2, пока оно чётное, и считает деления & \code{size\us{}t i} ($i \geqslant 1$) $\to$ \code{size\us{}t}~--- количество нулей в конце двоичной записи $i$ & нет \\\hline
-\code{generate\us{}gray\us{}code} & строит код Грея: начинает со слова 0 и на каждом шаге инвертирует разряд \code{changed\us{}bit(i)} & \code{size\us{}t depth} $\to$ \code{std::vector<size\us{}t>} из $2^{\text{depth}}$ слов в порядке кода; при depth $= 0$ вектор пуст & \code{Invalid\allowbreak{}Depth\allowbreak{}Error} при depth $>$ \code{MAX\us{}TYPE\us{}DEPTH} \\\hline
-\code{code\us{}to\us{}string} & переводит слово, хранящееся числом, в строку из символов 0 и 1, старший разряд слева & \code{size\us{}t code}, \code{size\us{}t depth} $\to$ \code{std::string} длины depth & нет \\\hline
-\code{CodeSet::CodeSet} & конструктор носителя: вызывает \code{generate\us{}gray\us{}code} и заполняет обратную таблицу \code{positions} & \code{size\us{}t depth} & \code{Invalid\allowbreak{}Depth\allowbreak{}Error} \\\hline
-\code{CodeSet::get\us{}depth} & возвращает разрядность $n$ & $\to$ \code{size\us{}t} & нет \\\hline
-\code{CodeSet::size} & возвращает число слов носителя & $\to$ \code{size\us{}t}: $2^n$, при $n = 0$~--- 0 & нет \\\hline
-\code{CodeSet::get\us{}code} & возвращает $i$-е слово кода Грея в виде строки & \code{size\us{}t i} $\to$ \code{std::string} & \code{Code\allowbreak{}Index\allowbreak{}Error} при $i \geqslant$ \code{size()} \\\hline
-\code{CodeSet::find} & по строке из 0 и 1 находит номер слова в коде Грея через таблицу \code{positions} за $O(n)$ & \code{const std::string\& code}, \code{size\us{}t\& index} $\to$ \code{bool}: true и номер в index; false, если длина строки не $n$, в ней есть другие символы или носитель пуст & нет \\\hline
-\end{longtable}
+\codefile[firstline=11, lastline=24]{Классы исключений кода Грея}{lst:grayerr}{\GC.hpp}
 
-\begin{longtable}{|P{3.4cm}|P{5.0cm}|P{4.5cm}|P{2.5cm}|}
-\caption{Методы класса \code{Multiset} и функции файла \code{Multiset.cpp}}\label{tab:fmulti}\\
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endfirsthead
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endhead
-\code{Multiset} (конструктор) & создаёт мультимножество над носителем, все кратности равны 0 & \code{std::shared\us{}ptr<const CodeSet> carrier} & нет \\\hline
-\code{check\us{}same\us{}carrier} (private) & проверяет, что у двух мультимножеств один и тот же носитель; сравниваются указатели & \code{const Multiset\& other} & \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{check\us{}within} (private) & проверяет, что мультимножество является подмультимножеством универсума~\eqref{eq:sub} & \code{const Multiset\& universe} & \code{Not\allowbreak{}Submultiset\allowbreak{}Error}, \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{get\us{}carrier} & возвращает ссылку на носитель; нужна при печати слов & $\to$ \code{const CodeSet\&} & нет \\\hline
-\code{size} & возвращает число элементов носителя & $\to$ \code{size\us{}t} & нет \\\hline
-\code{get\us{}count} & возвращает кратность $i$-го слова & \code{size\us{}t i} $\to$ \code{size\us{}t} & \code{Multiset\allowbreak{}Index\allowbreak{}Error} при $i \geqslant$ \code{size()} \\\hline
-\code{set\us{}count} & записывает кратность $i$-го слова; проверки по универсуму не делает & \code{size\us{}t i}, \code{size\us{}t count} & \code{Multiset\allowbreak{}Index\allowbreak{}Error} \\\hline
-\code{cardinality} & вычисляет мощность~\eqref{eq:card}~--- сумму всех кратностей & $\to$ \code{size\us{}t} & нет \\\hline
-\code{is\us{}submultiset\us{}of} & поэлементно проверяет условие~\eqref{eq:sub} & \code{const Multiset\& other} $\to$ \code{bool} & \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{unite} & объединение: в каждой позиции берётся $\max(\kA, \kB)$ & \code{const Multiset\& b} $\to$ \code{Multiset} & \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{intersect} & пересечение: в каждой позиции берётся $\min(\kA, \kB)$ & \code{const Multiset\& b} $\to$ \code{Multiset} & \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{complement} & дополнение до универсума: $\kU - \kA$; перед вычислением проверяет $A \subseteq U$ & \code{const Multiset\& universe} $\to$ \code{Multiset} & \code{Not\allowbreak{}Submultiset\allowbreak{}Error}, \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{difference} & разность $A \setminus B$, вычисляется как \code{intersect(}\allowbreak{}\code{b.complement(universe))} & \code{const Multiset\& b}, \code{const Multiset\& universe} $\to$ \code{Multiset} & как у \code{complement} \\\hline
-\code{symmetric\us{}difference} & симметрическая разность: объединение разностей $A \setminus B$ и $B \setminus A$ & \code{const Multiset\& b}, \code{const Multiset\& universe} $\to$ \code{Multiset} & как у \code{complement} \\\hline
-\code{arithmetic\us{}sum} & сумма $\min(\kA + \kB, \kU)$; перед вычислением проверяет $A \subseteq U$ и $B \subseteq U$ & \code{const Multiset\& b}, \code{const Multiset\& universe} $\to$ \code{Multiset} & \code{Not\allowbreak{}Submultiset\allowbreak{}Error}, \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{arithmetic\us{}difference} & разность $\max(\kA - \kB, 0)$; кратности сравниваются до вычитания, поэтому беззнаковый тип не переполняется & \code{const Multiset\& b} $\to$ \code{Multiset} & \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{arithmetic\us{}product} & произведение $\min(\kA \cdot \kB, \kU)$; проверки как у суммы & \code{const Multiset\& b}, \code{const Multiset\& universe} $\to$ \code{Multiset} & \code{Not\allowbreak{}Submultiset\allowbreak{}Error}, \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{arithmetic\us{}division} & деление $\kA \operatorname{div} \kB$, при $\kB = 0$ результат 0 & \code{const Multiset\& b} $\to$ \code{Multiset} & \code{Carrier\allowbreak{}Mismatch\allowbreak{}Error} \\\hline
-\code{random\us{}submultiset} (friend) & автоматическое заполнение по алгоритму подраздела~1.4 & \code{const Multiset\& bound}, \code{size\us{}t cardinality} $\to$ \code{Multiset} мощности cardinality & \code{Cardinality\allowbreak{}Overflow\allowbreak{}Error} при cardinality $> |\text{bound}|$ \\\hline
-\code{print\us{}multiset} & печатает запись вида \code{\{000×2, 011×1\}}, пропуская нулевые кратности; после limit элементов печатает «\code{... ещё N эл.}» & \code{std::ostream\& out}, \code{const Multiset\& multiset}, \code{size\us{}t limit} & нет \\\hline
-\code{operator<<} & печатает мультимножество полностью, вызывая \code{print\us{}multiset} с limit, равным \code{size()} & \code{std::ostream\& out}, \code{const Multiset\& multiset} $\to$ \code{std::ostream\&} & нет \\\hline
-\end{longtable}
+\subsubsection{Функция \code{changed\us{}bit}}\label{fn:changed}
 
-\begin{longtable}{|P{3.4cm}|P{5.0cm}|P{4.5cm}|P{2.5cm}|}
-\caption{Функции файлов \code{Universe.cpp} и \code{Random.cpp}}\label{tab:frand}\\
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endfirsthead
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endhead
-\code{uniform\us{}universe} & создаёт универсум~\eqref{eq:univ}: каждое слово носителя получает кратность multiplicity & \code{std::shared\us{}ptr<const CodeSet> carrier}, \code{size\us{}t multiplicity} $\to$ \code{Multiset} & \code{Invalid\allowbreak{}Multiplicity\allowbreak{}Error}, если multiplicity вне $[1, 100]$ \\\hline
-\code{generator} (static) & хранит единственный объект генератора \code{std::mt19937} в статической переменной & $\to$ \code{std::mt19937\&} & нет \\\hline
-\code{make\us{}seed} & получает зерно: значение \code{std::random\us{}device}, к которому примешано текущее время (в MinGW \code{random\us{}device} при каждом запуске выдаёт одно и то же) & $\to$ \code{unsigned} & нет \\\hline
-\code{seed\us{}random} & задаёт начальное состояние генератора; одно и то же зерно даёт одну и ту же последовательность чисел & \code{unsigned seed} & нет \\\hline
-\code{random\us{}below} & возвращает равновероятное целое число от 0 до bound $- 1$ через \code{std::uniform\us{}int\us{}distribution} & \code{size\us{}t bound} ($> 0$) $\to$ \code{size\us{}t} & нет \\\hline
-\end{longtable}
+Функция вычисляет номер разряда $p(i)$, который инвертируется на шаге $i$ генерации кода Грея по формуле~\eqref{eq:p}. На вход подаётся номер шага $i$, $1 \leqslant i \leqslant 2^n - 1$; при $i = 0$ цикл не завершается, поэтому функция с таким значением не вызывается. На выходе получается $p(i)$, то есть число нулей в конце двоичной записи $i$. Пока текущее значение чётно, оно делится на 2; число выполненных делений возвращается. Функция объявлена как \code{static} и используется только в \code{generate\us{}gray\us{}code}. Текст функции приведён в \lnk{lst:changed}{листинге}.
 
-\begin{longtable}{|P{3.4cm}|P{5.0cm}|P{4.5cm}|P{2.5cm}|}
-\caption{Функции файла \code{Input.cpp}}\label{tab:finput}\\
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endfirsthead
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endhead
-\code{stdin\us{}is\us{}console} (static) & определяет, идёт ли ввод с клавиатуры или из файла & $\to$ \code{bool} & нет \\\hline
-\code{read\us{}text} & печатает приглашение и читает строку; при вводе из файла выводит прочитанную строку на экран; убирает пробелы, табуляции и \code{\textbackslash r} по краям & \code{const std::string\& prompt} $\to$ \code{std::string} & \code{Input\allowbreak{}Closed\allowbreak{}Error} при конце ввода \\\hline
-\code{parse\us{}number} & разбирает строку из 1--9 цифр в число; при ошибке value не меняется & \code{const std::string\& text}, \code{size\us{}t\& value} $\to$ \code{bool} & нет \\\hline
-\code{is\us{}code} & проверяет, что строка имеет длину depth и состоит из символов 0 и 1 & \code{const std::string\& text}, \code{size\us{}t depth} $\to$ \code{bool} & нет \\\hline
-\code{report\us{}bad\us{}number} (static) & печатает причину ошибки ввода числа: пустая строка, не целое неотрицательное число или число вне отрезка & \code{const std::string\& text}, \code{size\us{}t min}, \code{size\us{}t max} & нет \\\hline
-\code{read\us{}number} & повторяет запрос, пока не будет введено число из отрезка $[\text{min}, \text{max}]$ & \code{const std::string\& prompt}, \code{size\us{}t min}, \code{size\us{}t max} $\to$ \code{size\us{}t} & \code{Input\allowbreak{}Closed\allowbreak{}Error} \\\hline
-\code{read\us{}number\us{}or\us{}empty} & то же, но пустая строка допустима & \code{const std::string\& prompt}, \code{size\us{}t min}, \code{size\us{}t max}, \code{size\us{}t\& value} $\to$ \code{bool}: false при пустой строке, value не меняется & \code{Input\allowbreak{}Closed\allowbreak{}Error} \\\hline
-\code{read\us{}letter} & повторяет запрос, пока не будет введена одна буква из letters; прописные буквы приводятся к строчным & \code{const std::string\& prompt}, \code{const std::string\& letters}, \code{bool allow\us{}empty} $\to$ \code{char}; \code{'\textbackslash 0'} при пустой строке, если allow\us{}empty & \code{Input\allowbreak{}Closed\allowbreak{}Error} \\\hline
-\end{longtable}
+\codefile[firstline=3, lastline=11]{Функция \code{changed\us{}bit}}{lst:changed}{\GC.cpp}
 
-\begin{longtable}{|P{3.4cm}|P{5.0cm}|P{4.5cm}|P{2.5cm}|}
-\caption{Методы класса \code{Menu}}\label{tab:fmenu}\\
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endfirsthead
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endhead
-\code{Menu} (конструктор) & создаёт пустой носитель ($n = 0$) и пустые $U$, $A$, $B$; все флаги готовности сброшены &~--- & нет \\\hline
-\code{run} & основной цикл: печатает список команд, читает команду, проверяет её через \code{is\us{}available} и вызывает нужный метод; команда \code{q} завершает цикл &~--- & \code{Input\allowbreak{}Closed\allowbreak{}Error} \\\hline
-\code{is\us{}available} & проверяет, можно ли выполнить команду в текущем состоянии; если нельзя, печатает, чего не хватает и какой командой это задать & \code{char command} $\to$ \code{bool} & нет \\\hline
-\code{create\us{}universe} & запрашивает $n$ и $k$ (при пустой строке $k$ выбирается случайно), строит новый носитель и универсум, сбрасывает $A$ и $B$, печатает до 16 слов кода и универсум &~--- & \code{Input\allowbreak{}Closed\allowbreak{}Error} \\\hline
-\code{fill\us{}multiset} & запрашивает мощность (при пустой строке~--- случайная) и способ заполнения; заполняет копию случайно или вручную и только после успеха записывает её в мультимножество & \code{Multiset\& multiset}, \code{bool\& ready}, \code{const std::string\& name} & \code{Input\allowbreak{}Closed\allowbreak{}Error} \\\hline
-\code{fill\us{}manual} & читает строки пар, пока мощность target не станет равной cardinality; пустая строка отменяет ввод & \code{Multiset\& target}, \code{size\us{}t cardinality}, \code{const std::string\& name} $\to$ \code{bool}: false при отмене & \code{Input\allowbreak{}Closed\allowbreak{}Error} \\\hline
-\code{parse\us{}manual\us{}line} & разбирает строку пар \code{код:кратность}, проверяет каждую пару и сумму кратностей; при ошибке печатает её причину & \code{const std::string\& line}, \code{const Multiset\& target}, \code{size\us{}t left}, \code{std::vector<size\us{}t>\& indices}, \code{std::vector<size\us{}t>\& counts} $\to$ \code{bool} & нет \\\hline
-\code{compute\us{}operations} & вычисляет 13 операций над $A$, $B$ и $U$ в порядке массива \code{OPERATIONS} & $\to$ \code{std::vector<Multiset>} & нет \\\hline
-\code{show\us{}help} & печатает формат записи мультимножества, формулы 13 операций и допустимые значения $n$, $k$, $|A|$, $|B|$ &~--- & нет \\\hline
-\code{show\us{}table} & печатает таблицу кратностей kU, kA, kB для первых \code{TABLE\us{}LIMIT}~$= 32$ слов и строку $\Sigma$ с мощностями; у незаданного мультимножества ставится «\code{-}» &~--- & нет \\\hline
-\code{show\us{}operations} & печатает 13 результатов с мощностями и две проверки: $|\overline{A}| = |U| - |A|$ и $|A \cup B| + |A \cap B| = |A| + |B|$ &~--- & нет \\\hline
-\code{show\us{}matrix} & печатает матрицу кратностей $U$, $A$, $B$ и 13 результатов; столбцов столько, сколько помещается в \code{MATRIX\us{}WIDTH}~$= 112$ символов, последний столбец~--- мощности по всем словам &~--- & нет \\\hline
-\end{longtable}
+\subsubsection{Функция \code{generate\us{}gray\us{}code}}\label{fn:generate}
 
-\begin{longtable}{|P{3.4cm}|P{5.0cm}|P{4.5cm}|P{2.5cm}|}
-\caption{Служебные функции файла \code{Menu.cpp} и функция \code{main}}\label{tab:fserv}\\
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endfirsthead
-\hline
-\textbf{Имя} & \textbf{Назначение} & \textbf{Вход $\to$ выход} & \textbf{Исключения}\\\hline
-\endhead
-\code{text\us{}width} (static) & считает ширину строки в символах: в UTF-8 учитываются только первые байты символов & \code{const std::string\& text} $\to$ \code{size\us{}t} & нет \\\hline
-\code{pad\us{}right} (static) & дополняет строку пробелами справа до ширины width; длинная строка не обрезается & \code{const std::string\& text}, \code{size\us{}t width} $\to$ \code{std::string} & нет \\\hline
-\code{pad\us{}left} (static) & дополняет строку пробелами слева до ширины width & \code{const std::string\& text}, \code{size\us{}t width} $\to$ \code{std::string} & нет \\\hline
-\code{format\us{}multiset} (static) & строит запись мультимножества: при $n \leqslant 4$ полностью, при $n > 4$ столько элементов, сколько помещается примерно в \code{LINE\us{}WIDTH}~$= 100$ символов, но не меньше 4 и не больше 16 & \code{const Multiset\& multiset} $\to$ \code{std::string} & нет \\\hline
-\code{compact} (static) & убирает пробелы из обозначения операции для заголовков матрицы (\code{A ∪ B} $\to$ \code{A∪B}) & \code{const std::string\& notation} $\to$ \code{std::string} & нет \\\hline
-\code{main} & включает UTF-8 в консоли Windows, задаёт зерно (\code{--seed N} или \code{make\us{}seed}) и печатает его, запускает \code{Menu::run} & \code{int argc}, \code{char* argv[]} $\to$ \code{int}: 0 или 1 & перехватывает \code{Input\allowbreak{}Closed\allowbreak{}Error} и \code{std::}\allowbreak{}\code{exception} \\\hline
-\end{longtable}
-}
+Функция строит последовательность слов кода Грея по алгоритму из \lnk{sec:gray}{подраздела}. На вход подаётся разрядность \code{depth} $= n$. На выходе получается вектор \code{std::vector<size\us{}t>} слов $g_0, \ldots, g_{N-1}$; слово хранится числом, у которого разряд с номером $j$ (справа, с нуля) равен $j$-му разряду слова. При $n = 0$ вектор пуст. При \code{depth} $>$ \code{MAX\us{}TYPE\us{}DEPTH} выбрасывается \code{InvalidDepthError}. Память под $2^n$ слов резервируется заранее, затем в вектор записывается $g_0 = 0$, и для $i = 1, \ldots, 2^n - 1$ по формуле~\eqref{eq:gray} дописывается $g_i = g_{i-1} \oplus 2^{p(i)}$, где $p(i)$ возвращает \code{changed\us{}bit}. Трудоёмкость~--- $O(2^n)$. Текст функции приведён в \lnk{lst:generate}{листинге}.
 
-Генерация кода Грея показана в листинге~\ref{lst:gray}, автоматическое заполнение~--- в листинге~\ref{lst:fill}.
+\codefile[firstline=13, lastline=31]{Функция \code{generate\us{}gray\us{}code}}{lst:generate}{\GC.cpp}
 
-\codefile[firstline=3, lastline=31]{Генерация кода Грея (\code{GrayCode.cpp})}{lst:gray}{listings/src/core/GrayCode.cpp}
+\subsubsection{Функция \code{code\us{}to\us{}string}}
 
-\codefile[firstline=130, lastline=150]{Автоматическое заполнение (\code{Multiset.cpp})}{lst:fill}{listings/src/core/Multiset.cpp}
+Функция переводит слово кода Грея, хранящееся числом, в строку из символов 0 и 1. На вход подаются слово \code{code} и разрядность \code{depth}; на выходе получается строка длины \code{depth}, старший разряд слева. Разряды перебираются от \code{depth}${}-1$ до 0, и в строку дописывается символ, равный значению разряда. Трудоёмкость~--- $O(n)$. Текст функции приведён в \lnk{lst:tostring}{листинге}.
 
+\codefile[firstline=33, lastline=39]{Функция \code{code\us{}to\us{}string}}{lst:tostring}{\GC.cpp}
+
+\subsubsection{Класс \code{CodeSet}}
+
+Класс хранит носитель $X$~--- слова кода Грея разрядности $n$~--- и обеспечивает переход от номера элемента к слову и обратно. Поле \code{depth} содержит разрядность $n$. Поле \code{codes} типа \code{std::vector<size\us{}t>} содержит слова $g_0, \ldots, g_{N-1}$ в порядке генерации: элемент $x_i$ носителя~--- слово \code{codes[i]}. Поле \code{positions} той же длины содержит обратную таблицу: \code{positions[c]} равно номеру слова $c$ в \code{codes}. Так как код Грея содержит все $2^n$ слов длины $n$, номер определён для любого слова. Слово хранится числом и переводится в строку только при выводе. Объявление класса приведено в \lnk{lst:codeset}{листинге}.
+
+\codefile[firstline=30, lastline=42]{Класс \code{CodeSet}}{lst:codeset}{\GC.hpp}
+
+\subsubsection{Конструктор \code{CodeSet}}
+
+Конструктор создаёт носитель разрядности \code{depth}, которая подаётся на вход. Поле \code{codes} заполняется вызовом \code{generate\us{}gray\us{}code(depth)}, затем для каждого $i$ записывается \code{positions[codes[i]] = i}. При \code{depth} $>$ \code{MAX\us{}TYPE\us{}DEPTH} исключение \code{InvalidDepthError} передаётся из \code{generate\us{}gray\us{}code}. Трудоёмкость~--- $O(2^n)$. Текст конструктора приведён в \lnk{lst:codesetctor}{листинге}.
+
+\codefile[firstline=41, lastline=45]{Конструктор \code{CodeSet}}{lst:codesetctor}{\GC.cpp}
+
+\subsubsection{Метод \code{CodeSet::get\us{}depth}}
+
+Метод не имеет входных данных и возвращает разрядность $n$ носителя. Текст метода приведён в \lnk{lst:getdepth}{листинге}.
+
+\codefile[firstline=47, lastline=49]{Метод \code{CodeSet::get\us{}depth}}{lst:getdepth}{\GC.cpp}
+
+\subsubsection{Метод \code{CodeSet::size}}
+
+Метод не имеет входных данных и возвращает число $N$ элементов носителя, равное длине \code{codes}: $2^n$ при $n \geqslant 1$ и 0 при $n = 0$. Текст метода приведён в \lnk{lst:codesetsize}{листинге}.
+
+\codefile[firstline=51, lastline=53]{Метод \code{CodeSet::size}}{lst:codesetsize}{\GC.cpp}
+
+\subsubsection{Метод \code{CodeSet::get\us{}code}}
+
+Метод возвращает элемент $x_i$ носителя в виде строки. На вход подаётся номер $i$; на выходе получается строка \code{code\us{}to\us{}string(codes[i], depth)}. При $i \geqslant N$ выбрасывается \code{CodeIndexError}. Текст метода приведён в \lnk{lst:getcode}{листинге}.
+
+\codefile[firstline=55, lastline=60]{Метод \code{CodeSet::get\us{}code}}{lst:getcode}{\GC.cpp}
+
+\subsubsection{Метод \code{CodeSet::find}}\label{fn:find}
+
+Метод находит номер слова, заданного строкой. На вход подаются строка \code{code} и ссылка \code{index}, в которую записывается результат. Если строка имеет длину $n$ и состоит из символов 0 и 1, метод записывает в \code{index} номер слова и возвращает \code{true}; иначе, а также при пустом носителе, возвращает \code{false}, и \code{index} не меняется. Строка переводится в число $c$ за $O(n)$, а номер берётся из \code{positions[c]} без просмотра \code{codes}. Текст метода приведён в \lnk{lst:find}{листинге}.
+
+\codefile[firstline=62, lastline=73]{Метод \code{CodeSet::find}}{lst:find}{\GC.cpp}
+
+% ------------------------------------------------------------
+\subsection{Генератор случайных чисел (\texorpdfstring{\code{Random.hpp}, \code{Random.cpp}}{Random.hpp, Random.cpp})}\label{sec:mrand}
+
+Файлы содержат генератор псевдослучайных чисел и функции работы с ним. Генератор используется при автоматическом заполнении и при случайном выборе кратности $k$ и мощности мультимножества.
+
+\subsubsection{Функция \code{generator}}
+
+Функция не имеет входных данных и возвращает ссылку на единственный объект генератора \code{std::mt19937}, который хранится в статической локальной переменной и создаётся при первом вызове. Функция объявлена как \code{static} и используется только в \code{Random.cpp}. Текст функции приведён в \lnk{lst:generator}{листинге}.
+
+\codefile[firstline=5, lastline=8]{Функция \code{generator}}{lst:generator}{\RN.cpp}
+
+\subsubsection{Функция \code{make\us{}seed}}
+
+Функция не имеет входных данных и возвращает зерно генератора типа \code{unsigned}. Зерно равно побитовому исключающему ИЛИ значения \code{std::random\us{}device} и текущего значения часов \code{std::chrono::high\us{}resolution\us{}clock}. Время примешивается потому, что в MinGW \code{std::random\us{}device} при каждом запуске выдаёт одну и ту же последовательность. Текст функции приведён в \lnk{lst:makeseed}{листинге}.
+
+\codefile[firstline=10, lastline=15]{Функция \code{make\us{}seed}}{lst:makeseed}{\RN.cpp}
+
+\subsubsection{Функция \code{seed\us{}random}}
+
+Функция задаёт начальное состояние генератора. На вход подаётся зерно \code{seed}, выходных данных нет. Одно и то же зерно даёт одну и ту же последовательность случайных чисел. Текст функции приведён в \lnk{lst:seedrandom}{листинге}.
+
+\codefile[firstline=17, lastline=19]{Функция \code{seed\us{}random}}{lst:seedrandom}{\RN.cpp}
+
+\subsubsection{Функция \code{random\us{}below}}\label{fn:below}
+
+Функция возвращает равновероятное целое число от 0 до \code{bound}${}-1$. На вход подаётся \code{bound} $\geqslant 1$; при \code{bound} $= 0$ верхняя граница \code{bound - 1} переполняется, поэтому функция с таким значением не вызывается. Число выбирается распределением \code{std::uniform\us{}int\us{}distribution<size\us{}t>} из генератора \code{generator()}. Текст функции приведён в \lnk{lst:below}{листинге}.
+
+\codefile[firstline=21, lastline=24]{Функция \code{random\us{}below}}{lst:below}{\RN.cpp}
+
+% ------------------------------------------------------------
+\subsection{Мультимножество (\texorpdfstring{\code{Multiset.hpp}, \code{Multiset.cpp}}{Multiset.hpp, Multiset.cpp})}\label{sec:mmulti}
+
+Файлы содержат классы исключений мультимножеств, класс \code{Multiset} с операциями, функцию автоматического заполнения и функции вывода. Каждая операция выполняется одним проходом по носителю, поэтому её трудоёмкость~--- $O(2^n)$.
+
+\subsubsection{Классы исключений мультимножеств}
+
+Класс \code{MultisetError}~--- наследник \code{std::runtime\us{}error} и базовый класс ошибок мультимножеств; его конструктор принимает текст сообщения. От него наследуются четыре класса. Исключение \code{MultisetIndexError} с сообщением «номер элемента вне носителя» выбрасывается при обращении к кратности элемента с номером $i \geqslant N$. Исключение \code{CarrierMismatchError} с сообщением «мультимножества построены над разными носителями» выбрасывается при операции над мультимножествами с разными носителями. Исключение \code{NotSubmultisetError} с сообщением «кратность элемента больше, чем в универсуме» выбрасывается, если аргумент операции не является подмультимножеством универсума. Исключение \code{CardinalityOverflowError} с сообщением «мощность больше мощности ограничивающего мультимножества» выбрасывается, если для автоматического заполнения задана мощность больше допустимой. Классы приведены в \lnk{lst:multierr}{листинге}.
+
+\codefile[firstline=10, lastline=33]{Классы исключений мультимножеств}{lst:multierr}{\MS.hpp}
+
+\subsubsection{Класс \code{Multiset}}
+
+Класс реализует мультимножество по определению~\eqref{eq:kfun}: объект хранит значения функции кратности на всех элементах носителя. Поле \code{carrier} типа \code{std::shared\us{}ptr<const CodeSet>} указывает на носитель $X$; все мультимножества программы ссылаются на один объект носителя. Поле \code{counts} типа \code{std::vector<size\us{}t>} длины $N$ содержит кратности: \code{counts[i]} $= k_A(x_i)$, где $x_i$~--- $i$-е слово кода Грея. Универсум $U$, мультимножества $A$, $B$ и результаты операций~--- объекты этого класса. Закрытые методы \code{check\us{}same\us{}carrier} и \code{check\us{}within} проверяют аргументы операций. Функция \code{random\us{}submultiset} объявлена дружественной, так как изменяет поле \code{counts} напрямую. Объявление класса и свободных функций приведено в \lnk{lst:multiset}{листинге}.
+
+\codefile[firstline=35, lastline=69]{Класс \code{Multiset}}{lst:multiset}{\MS.hpp}
+
+\subsubsection{Конструктор \code{Multiset}}
+
+Конструктор создаёт мультимножество над носителем, указатель \code{carrier} на который подаётся на вход, с $\kA = 0$ для всех $x \in X$: длина \code{counts} равна \code{carrier->size()}, все элементы равны нулю. Текст конструктора приведён в \lnk{lst:msctor}{листинге}.
+
+\codefile[firstline=5, lastline=5]{Конструктор \code{Multiset}}{lst:msctor}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::get\us{}carrier}}
+
+Метод не имеет входных данных и возвращает константную ссылку на носитель; используется при выводе слов. Текст метода приведён в \lnk{lst:getcarrier}{листинге}.
+
+\codefile[firstline=19, lastline=21]{Метод \code{Multiset::get\us{}carrier}}{lst:getcarrier}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::size}}
+
+Метод не имеет входных данных и возвращает число $N$ элементов носителя, равное длине \code{counts}. Текст метода приведён в \lnk{lst:mssize}{листинге}.
+
+\codefile[firstline=23, lastline=25]{Метод \code{Multiset::size}}{lst:mssize}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::get\us{}count}}
+
+Метод возвращает кратность $k_A(x_i)$. На вход подаётся номер $i$; при $i \geqslant N$ выбрасывается \code{MultisetIndexError}. Текст метода приведён в \lnk{lst:getcount}{листинге}.
+
+\codefile[firstline=27, lastline=32]{Метод \code{Multiset::get\us{}count}}{lst:getcount}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::set\us{}count}}
+
+Метод записывает кратность $k_A(x_i) = $ \code{count}. На вход подаются номер $i$ и кратность \code{count}, выходных данных нет. При $i \geqslant N$ выбрасывается \code{MultisetIndexError}. Условие $k_A(x_i) \leqslant k_U(x_i)$ метод не проверяет: его обеспечивают вызывающие функции. Текст метода приведён в \lnk{lst:setcount}{листинге}.
+
+\codefile[firstline=34, lastline=39]{Метод \code{Multiset::set\us{}count}}{lst:setcount}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::cardinality}}
+
+Метод не имеет входных данных и возвращает мощность $|A|$, вычисленную по формуле~\eqref{eq:card} суммированием \code{counts} за $O(2^n)$. Текст метода приведён в \lnk{lst:cardinality}{листинге}.
+
+\codefile[firstline=41, lastline=47]{Метод \code{Multiset::cardinality}}{lst:cardinality}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::check\us{}same\us{}carrier}}
+
+Закрытый метод проверяет, что мультимножество \code{other}, которое подаётся на вход, построено над тем же носителем: сравниваются указатели \code{carrier}. При несовпадении выбрасывается \code{CarrierMismatchError}. Текст метода приведён в \lnk{lst:samecarrier}{листинге}.
+
+\codefile[firstline=7, lastline=11]{Метод \code{Multiset::check\us{}same\us{}carrier}}{lst:samecarrier}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::is\us{}submultiset\us{}of}}
+
+Метод проверяет условие $A \subseteq {}$\code{other} по формуле~\eqref{eq:sub}. На вход подаётся мультимножество \code{other}; на выходе получается \code{true}, если \code{counts[i]} $\leqslant$ \code{other.counts[i]} для всех $i$, и \code{false} иначе. Сначала вызывается \code{check\us{}same\us{}carrier}. Текст метода приведён в \lnk{lst:issub}{листинге}.
+
+\codefile[firstline=49, lastline=55]{Метод \code{Multiset::is\us{}submultiset\us{}of}}{lst:issub}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::check\us{}within}}
+
+Закрытый метод проверяет условие $A \subseteq U$. На вход подаётся универсум \code{universe}. Если \code{is\us{}submultiset\us{}of(universe)} возвращает \code{false}, выбрасывается \code{NotSubmultisetError}; при разных носителях \code{CarrierMismatchError} передаётся из \code{check\us{}same\us{}carrier}. Текст метода приведён в \lnk{lst:within}{листинге}.
+
+\codefile[firstline=13, lastline=17]{Метод \code{Multiset::check\us{}within}}{lst:within}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::unite}}
+
+Метод вычисляет объединение $A \cup B$ по формуле~\eqref{eq:union}. На вход подаётся мультимножество $B$, на выходе получается новое мультимножество над тем же носителем. После \code{check\us{}same\us{}carrier} для каждого $i$ записывается \code{max(counts[i], b.counts[i])}. Текст метода приведён в \lnk{lst:unite}{листинге}.
+
+\codefile[firstline=57, lastline=64]{Метод \code{Multiset::unite}}{lst:unite}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::intersect}}
+
+Метод вычисляет пересечение $A \cap B$ по формуле~\eqref{eq:inter}. На вход подаётся мультимножество $B$, на выходе получается новое мультимножество. После \code{check\us{}same\us{}carrier} для каждого $i$ записывается \code{min(counts[i], b.counts[i])}. Текст метода приведён в \lnk{lst:intersect}{листинге}.
+
+\codefile[firstline=66, lastline=73]{Метод \code{Multiset::intersect}}{lst:intersect}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::complement}}
+
+Метод вычисляет дополнение $\overline{A}$ по формуле~\eqref{eq:compl}; дополнение $\overline{B}$ по формуле~\eqref{eq:complb} вычисляется вызовом этого метода у объекта $B$. На вход подаётся универсум $U$, на выходе получается новое мультимножество. Сначала \code{check\us{}within(universe)} проверяет $A \subseteq U$, поэтому разность \code{universe.counts[i] - counts[i]} неотрицательна и беззнаковый тип не переполняется. Текст метода приведён в \lnk{lst:complement}{листинге}.
+
+\codefile[firstline=75, lastline=82]{Метод \code{Multiset::complement}}{lst:complement}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::difference}}
+
+Метод вычисляет разность $A \setminus B$ по формуле~\eqref{eq:diff} в виде~\eqref{eq:diffset}: возвращает \code{intersect(b.complement(universe))}. Разность $B \setminus A$ по формуле~\eqref{eq:diffba} вычисляется вызовом этого метода у объекта $B$. На вход подаются мультимножество $B$ и универсум $U$, на выходе получается новое мультимножество. Условие $B \subseteq U$ проверяет \code{complement}. Текст метода приведён в \lnk{lst:difference}{листинге}.
+
+\codefile[firstline=84, lastline=86]{Метод \code{Multiset::difference}}{lst:difference}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::symmetric\us{}difference}}
+
+Метод вычисляет симметрическую разность $A \mathbin{\triangle} B$ по формуле~\eqref{eq:sym} в виде~\eqref{eq:symset}: возвращает \code{difference(b, universe).unite(b.difference(*this, universe))}. На вход подаются мультимножество $B$ и универсум $U$, на выходе получается новое мультимножество. Условия $B \subseteq U$ и $A \subseteq U$ проверяются в двух вызовах \code{difference}. Текст метода приведён в \lnk{lst:symdiff}{листинге}.
+
+\codefile[firstline=88, lastline=90]{Метод \code{Multiset::symmetric\us{}difference}}{lst:symdiff}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::arithmetic\us{}sum}}
+
+Метод вычисляет арифметическую сумму $A + B$ по формуле~\eqref{eq:asum}. На вход подаются мультимножество $B$ и универсум $U$, на выходе получается новое мультимножество. Сначала проверяются условия $A \subseteq U$ и $B \subseteq U$, затем для каждого $i$ записывается \code{min(counts[i] + b.counts[i], universe.counts[i])}. Так как $k \leqslant 100$, сумма не превосходит 200. Текст метода приведён в \lnk{lst:asum}{листинге}.
+
+\codefile[firstline=92, lastline=100]{Метод \code{Multiset::arithmetic\us{}sum}}{lst:asum}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::arithmetic\us{}difference}}
+
+Метод вычисляет арифметическую разность $A - B$ по формуле~\eqref{eq:adiff}; разность $B - A$ по формуле~\eqref{eq:adiffba} вычисляется вызовом этого метода у объекта $B$. На вход подаётся мультимножество $B$, на выходе получается новое мультимножество. Кратности сравниваются до вычитания: при \code{counts[i] > b.counts[i]} записывается разность, иначе 0, поэтому беззнаковое вычитание не переполняется. Проверка по универсуму не нужна, так как результат не превосходит $\kA$. Текст метода приведён в \lnk{lst:adiff}{листинге}.
+
+\codefile[firstline=102, lastline=109]{Метод \code{Multiset::arithmetic\us{}difference}}{lst:adiff}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::arithmetic\us{}product}}
+
+Метод вычисляет арифметическое произведение $A \cdot B$ по формуле~\eqref{eq:aprod}. На вход подаются мультимножество $B$ и универсум $U$, на выходе получается новое мультимножество. Проверки те же, что в \code{arithmetic\us{}sum}, затем для каждого $i$ записывается \code{min(counts[i] * b.counts[i], universe.counts[i])}; произведение не превосходит $100 \cdot 100 = 10\,000$. Текст метода приведён в \lnk{lst:aprod}{листинге}.
+
+\codefile[firstline=111, lastline=119]{Метод \code{Multiset::arithmetic\us{}product}}{lst:aprod}{\MS.cpp}
+
+\subsubsection{Метод \code{Multiset::arithmetic\us{}division}}
+
+Метод вычисляет арифметическое деление $A / B$ по формуле~\eqref{eq:adiv}; деление $B / A$ по формуле~\eqref{eq:adivba} вычисляется вызовом этого метода у объекта $B$. На вход подаётся мультимножество $B$, на выходе получается новое мультимножество. При \code{b.counts[i]} $\neq 0$ записывается целочисленное частное \code{counts[i] / b.counts[i]}, иначе 0. Текст метода приведён в \lnk{lst:adiv}{листинге}.
+
+\codefile[firstline=121, lastline=128]{Метод \code{Multiset::arithmetic\us{}division}}{lst:adiv}{\MS.cpp}
+
+\subsubsection{Функция \code{random\us{}submultiset}}\label{fn:random}
+
+Функция выполняет алгоритм автоматического заполнения из \lnk{sec:fill}{подраздела}. На вход подаются ограничивающее мультимножество \code{bound} (в программе~--- универсум $U$) и мощность \code{cardinality} $= m$; на выходе получается мультимножество $R \subseteq {}$\code{bound} мощности $m$. При $m > |\text{\code{bound}}|$ выбрасывается \code{CardinalityOverflowError}. Вектор \code{free} реализует список $F$: он содержит номера элементов, у которых $k_R(x)$ меньше кратности в \code{bound}. На каждом из $m$ шагов позиция в \code{free} выбирается вызовом \code{random\us{}below(free.size())} (\lnk{fn:below}{п.}), кратность элемента увеличивается на 1, а заполненный элемент удаляется из \code{free} заменой последним за $O(1)$. Трудоёмкость~--- $O(2^n)$. Текст функции приведён в \lnk{lst:random}{листинге}.
+
+\codefile[firstline=130, lastline=150]{Функция \code{random\us{}submultiset}}{lst:random}{\MS.cpp}
+
+\subsubsection{Функция \code{print\us{}multiset}}\label{fn:print}
+
+Функция выводит мультимножество в поток в записи из \lnk{sec:mset}{подраздела}, например \code{\{000×2, 011×1\}}. На вход подаются поток \code{out}, мультимножество \code{multiset} и наибольшее число выводимых пар \code{limit}; выходных данных нет. Элементы с нулевой кратностью пропускаются. Если элементов с ненулевой кратностью больше \code{limit}, после \code{limit} пар выводится «\code{..., ещё N эл.}», где $N$~--- число невыведенных пар. Текст функции приведён в \lnk{lst:print}{листинге}.
+
+\codefile[firstline=152, lastline=170]{Функция \code{print\us{}multiset}}{lst:print}{\MS.cpp}
+
+\subsubsection{Оператор \code{operator<<}}
+
+Оператор выводит мультимножество в поток полностью: вызывает \code{print\us{}multiset} с \code{limit}, равным \code{size()}, и возвращает поток \code{out}. На вход подаются поток \code{out} и мультимножество \code{multiset}. В программе оператор не вызывается: меню выводит мультимножества через функцию \code{format\us{}multiset} (\lnk{fn:format}{п.}). Текст оператора приведён в \lnk{lst:operator}{листинге}.
+
+\codefile[firstline=172, lastline=175]{Оператор \code{operator<<}}{lst:operator}{\MS.cpp}
+
+% ------------------------------------------------------------
+\subsection{Универсум (\texorpdfstring{\code{Universe.hpp}, \code{Universe.cpp}}{Universe.hpp, Universe.cpp})}\label{sec:muniv}
+
+Файлы содержат константу, ограничивающую кратность универсума, класс исключения и функцию построения универсума.
+
+\subsubsection{Константа \code{MAX\us{}MULTIPLICITY} и класс \code{InvalidMultiplicityError}}
+
+Константа \code{MAX\us{}MULTIPLICITY} $= 100$~--- наибольшая кратность $k$ элемента универсума; её выбор обоснован в \lnk{sec:limits}{подразделе}. Исключение \code{InvalidMultiplicityError}~--- наследник \code{MultisetError} с сообщением «кратность элемента универсума вне диапазона от 1 до MAX\us{}MULTIPLICITY»; оно выбрасывается при кратности вне отрезка $[1, 100]$. Объявления приведены в \lnk{lst:univconst}{листинге}.
+
+\codefile[firstline=7, lastline=12]{Константа \code{MAX\us{}MULTIPLICITY} и класс \code{InvalidMultiplicityError}}{lst:univconst}{\UV.hpp}
+
+\subsubsection{Функция \code{uniform\us{}universe}}
+
+Функция строит универсум $U$ по формуле~\eqref{eq:univ}. На вход подаются указатель на носитель \code{carrier} и кратность \code{multiplicity} $= k$; на выходе получается мультимножество с $\kU = k$ для всех $x \in X$. При $k$ вне отрезка $[1, \text{\code{MAX\us{}MULTIPLICITY}}]$ выбрасывается \code{InvalidMultiplicityError}. Кратности записываются методом \code{set\us{}count} за $O(2^n)$. Текст функции приведён в \lnk{lst:universe}{листинге}.
+
+\codefile[firstline=3, lastline=12]{Функция \code{uniform\us{}universe}}{lst:universe}{\UV.cpp}
+
+% ------------------------------------------------------------
+\subsection{Ввод (\texorpdfstring{\code{Input.hpp}, \code{Input.cpp}}{Input.hpp, Input.cpp})}\label{sec:minput}
+
+Файлы содержат класс исключения конца ввода и функции чтения строк и чисел с проверкой. Весь ввод программы выполняется через эти функции.
+
+\subsubsection{Класс \code{InputClosedError}}
+
+Исключение \code{InputClosedError}~--- наследник \code{std::runtime\us{}error} с сообщением «ввод закончился»; оно выбрасывается, когда поток ввода закончился (конец файла или Ctrl+Z). Класс приведён в \lnk{lst:inputerr}{листинге}.
+
+\codefile[firstline=6, lastline=9]{Класс \code{InputClosedError}}{lst:inputerr}{\IN.hpp}
+
+\subsubsection{Функция \code{stdin\us{}is\us{}console}}
+
+Функция не имеет входных данных и возвращает \code{true}, если стандартный ввод связан с консолью, и \code{false}, если ввод идёт из файла. Функция имеет две реализации, которые выбираются директивой \code{\#ifdef \us{}WIN32}: в Windows вызывается \code{\us{}isatty(0)}, в других системах~--- \code{isatty(0)}. Функция объявлена как \code{static}. Текст функции приведён в \lnk{lst:console}{листинге}.
+
+\codefile[firstline=3, lastline=9]{Функция \code{stdin\us{}is\us{}console}}{lst:console}{\IN.cpp}
+
+\subsubsection{Функция \code{read\us{}text}}
+
+Функция выводит приглашение и читает одну строку. На вход подаётся строка приглашения \code{prompt}; на выходе получается прочитанная строка без пробелов, табуляций и символов \code{\textbackslash r} по краям. Если строку прочитать не удалось, выбрасывается \code{InputClosedError}. При вводе из файла, то есть когда \code{stdin\us{}is\us{}console()} возвращает \code{false}, прочитанная строка выводится на экран, поэтому в протоколе работы виден весь ввод. Текст функции приведён в \lnk{lst:readtext}{листинге}.
+
+\codefile[firstline=11, lastline=23]{Функция \code{read\us{}text}}{lst:readtext}{\IN.cpp}
+
+\subsubsection{Функция \code{parse\us{}number}}
+
+Функция переводит строку в число. На вход подаются строка \code{text} и ссылка \code{value}. Если строка состоит из 1--9 десятичных цифр, функция записывает число в \code{value} и возвращает \code{true}; иначе возвращает \code{false}, и \code{value} не меняется. Ограничение в 9 цифр исключает переполнение: $999\,999\,999 < 2^{32} - 1$. Текст функции приведён в \lnk{lst:parsenumber}{листинге}.
+
+\codefile[firstline=25, lastline=34]{Функция \code{parse\us{}number}}{lst:parsenumber}{\IN.cpp}
+
+\subsubsection{Функция \code{is\us{}code}}
+
+Функция проверяет, что строка является словом заданной длины. На вход подаются строка \code{text} и разрядность \code{depth}; на выходе получается \code{true}, если длина \code{text} равна \code{depth} и строка состоит из символов 0 и 1, и \code{false} иначе. Текст функции приведён в \lnk{lst:iscode}{листинге}.
+
+\codefile[firstline=36, lastline=42]{Функция \code{is\us{}code}}{lst:iscode}{\IN.cpp}
+
+\subsubsection{Функция \code{report\us{}bad\us{}number}}
+
+Функция выводит причину, по которой строка не принята как число из отрезка $[\text{\code{min}}, \text{\code{max}}]$. На вход подаются строка \code{text} и границы \code{min}, \code{max}; выходных данных нет. Различаются три причины: пустая строка, число вне отрезка и строка, не являющаяся целым неотрицательным числом. Функция объявлена как \code{static}. Текст функции приведён в \lnk{lst:badnumber}{листинге}.
+
+\codefile[firstline=44, lastline=56]{Функция \code{report\us{}bad\us{}number}}{lst:badnumber}{\IN.cpp}
+
+\subsubsection{Функция \code{read\us{}number}}
+
+Функция читает число из отрезка $[\text{\code{min}}, \text{\code{max}}]$. На вход подаются приглашение \code{prompt} и границы \code{min}, \code{max}; на выходе получается введённое число. Запрос повторяется, пока строка не будет принята функцией \code{parse\us{}number} и число не попадёт в отрезок; при каждом отказе вызывается \code{report\us{}bad\us{}number}. При конце ввода \code{InputClosedError} передаётся из \code{read\us{}text}. Текст функции приведён в \lnk{lst:readnumber}{листинге}.
+
+\codefile[firstline=58, lastline=67]{Функция \code{read\us{}number}}{lst:readnumber}{\IN.cpp}
+
+\subsubsection{Функция \code{read\us{}number\us{}or\us{}empty}}
+
+Функция отличается от \code{read\us{}number} тем, что принимает пустую строку. На вход подаются приглашение \code{prompt}, границы \code{min}, \code{max} и ссылка \code{value}. При пустой строке функция возвращает \code{false}, и \code{value} не меняется; при числе из отрезка записывает его в \code{value} и возвращает \code{true}. Текст функции приведён в \lnk{lst:readornumber}{листинге}.
+
+\codefile[firstline=69, lastline=80]{Функция \code{read\us{}number\us{}or\us{}empty}}{lst:readornumber}{\IN.cpp}
+
+\subsubsection{Функция \code{read\us{}letter}}
+
+Функция читает одну букву из заданного набора. На вход подаются приглашение \code{prompt}, строка допустимых букв \code{letters} и флаг \code{allow\us{}empty}; на выходе получается введённая буква, причём прописные латинские буквы приводятся к строчным. Если \code{allow\us{}empty} равен \code{true}, пустая строка допустима, и функция возвращает символ \code{'\textbackslash 0'}. При любом другом вводе выводится сообщение со списком допустимых букв, и запрос повторяется. Текст функции приведён в \lnk{lst:readletter}{листинге}.
+
+\codefile[firstline=82, lastline=102]{Функция \code{read\us{}letter}}{lst:readletter}{\IN.cpp}
+
+% ------------------------------------------------------------
+\subsection{Меню (\texorpdfstring{\code{Menu.hpp}, \code{Menu.cpp}}{Menu.hpp, Menu.cpp})}\label{sec:mmenu}
+
+Файлы содержат константы и вспомогательные функции вывода, а также класс \code{Menu}, который хранит состояние программы и выполняет команды пользователя. Все функции этого подраздела, кроме методов класса, объявлены как \code{static}.
+
+\subsubsection{Константы вывода}
+
+Константа \code{TABLE\us{}LIMIT} $= 32$~--- наибольшее число строк таблицы кратностей. Константа \code{PRINT\us{}LIMIT} $= 16$~--- наибольшее число выводимых слов кода и пар мультимножества. Константа \code{LINE\us{}WIDTH} $= 100$~--- ширина строки в символах, по которой выбирается число выводимых пар. Константа \code{MATRIX\us{}WIDTH} $= 112$~--- ширина матрицы кратностей в символах. Объявления приведены в \lnk{lst:menuconst}{листинге}.
+
+\codefile[firstline=9, lastline=12]{Константы вывода}{lst:menuconst}{\MN.cpp}
+
+\subsubsection{Структура \code{OperationInfo}, массив \code{OPERATIONS} и строка \code{COMMANDS}}
+
+Структура \code{OperationInfo} описывает операцию для вывода: поле \code{title} содержит название, \code{notation}~--- обозначение, \code{formula}~--- формулу кратности для справки. Массив \code{OPERATIONS} содержит 13 таких структур в порядке вывода, константа \code{OPERATION\us{}COUNT} $= 13$~--- их число. Строка \code{COMMANDS} содержит список команд, который выводится перед каждым запросом команды. Объявления приведены в \lnk{lst:operations}{листинге}.
+
+\codefile[firstline=14, lastline=38]{Структура \code{OperationInfo}, массив \code{OPERATIONS} и строка \code{COMMANDS}}{lst:operations}{\MN.cpp}
+
+\subsubsection{Функция \code{text\us{}width}}
+
+Функция возвращает ширину строки \code{text} в символах. В кодировке UTF-8 символ занимает от 1 до 4 байт, и все байты, кроме первого, имеют вид \code{10xxxxxx}, поэтому считаются только байты $b$, для которых \code{(b \& 0xC0) != 0x80}. Текст функции приведён в \lnk{lst:textwidth}{листинге}.
+
+\codefile[firstline=40, lastline=46]{Функция \code{text\us{}width}}{lst:textwidth}{\MN.cpp}
+
+\subsubsection{Функции \code{pad\us{}right} и \code{pad\us{}left}}
+
+Функции дополняют строку пробелами до заданной ширины: \code{pad\us{}right}~--- справа, \code{pad\us{}left}~--- слева. На вход подаются строка \code{text} и ширина \code{width}; на выходе получается дополненная строка. Ширина считается функцией \code{text\us{}width}; строка шире \code{width} возвращается без изменений. Тексты функций приведены в \lnk{lst:pad}{листинге}.
+
+\codefile[firstline=48, lastline=56]{Функции \code{pad\us{}right} и \code{pad\us{}left}}{lst:pad}{\MN.cpp}
+
+\subsubsection{Функция \code{format\us{}multiset}}\label{fn:format}
+
+Функция возвращает запись мультимножества \code{multiset}, которое подаётся на вход, для вывода в меню. При $n \leqslant 4$ выводится до \code{PRINT\us{}LIMIT} пар, то есть все пары, так как $N \leqslant 16$. При $n > 4$ пара занимает до $n + 6$ символов, и число пар равно \code{LINE\us{}WIDTH}${} / (n + 6)$, но не меньше 4 и не больше 16. Запись строится вызовом \code{print\us{}multiset} (\lnk{fn:print}{п.}). Текст функции приведён в \lnk{lst:format}{листинге}.
+
+\codefile[firstline=58, lastline=68]{Функция \code{format\us{}multiset}}{lst:format}{\MN.cpp}
+
+\subsubsection{Функция \code{compact}}
+
+Функция убирает пробелы из обозначения операции \code{notation}, которое подаётся на вход, и возвращает результат, например \code{A ∪ B} превращается в \code{A∪B}. Используется для подписей строк матрицы кратностей. Текст функции приведён в \lnk{lst:compact}{листинге}.
+
+\codefile[firstline=70, lastline=74]{Функция \code{compact}}{lst:compact}{\MN.cpp}
+
+\subsubsection{Класс \code{Menu}}
+
+Класс хранит состояние программы. Поле \code{carrier} указывает на текущий носитель $X$. Поля \code{universe}, \code{a} и \code{b}~--- мультимножества $U$, $A$ и $B$ над этим носителем. Флаги \code{universe\us{}ready}, \code{a\us{}ready} и \code{b\us{}ready} показывают, что соответствующее мультимножество задано. Открытые методы~--- конструктор и \code{run}, остальные методы закрытые. Объявление класса приведено в \lnk{lst:menu}{листинге}.
+
+\codefile[firstline=9, lastline=35]{Класс \code{Menu}}{lst:menu}{\MN.hpp}
+
+\subsubsection{Конструктор \code{Menu}}
+
+Конструктор не имеет входных данных. Он создаёт носитель разрядности 0 ($N = 0$) и пустые $U$, $A$, $B$ над ним; все флаги равны \code{false}. Текст конструктора приведён в \lnk{lst:menuctor}{листинге}.
+
+\codefile[firstline=76, lastline=77]{Конструктор \code{Menu}}{lst:menuctor}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::is\us{}available}}
+
+Метод проверяет, можно ли выполнить команду в текущем состоянии. На вход подаётся буква команды \code{command}; на выходе получается \code{true}, если команда доступна. Команды \code{u} и \code{h} доступны всегда, остальные требуют \code{universe\us{}ready}, а команды \code{o} и \code{m}~--- ещё \code{a\us{}ready} и \code{b\us{}ready}. Если команда недоступна, выводится, какие данные не заданы и какой командой их задать. Текст метода приведён в \lnk{lst:available}{листинге}.
+
+\codefile[firstline=97, lastline=111]{Метод \code{Menu::is\us{}available}}{lst:available}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::create\us{}universe}}
+
+Метод создаёт новый носитель и универсум; входных и выходных данных нет, значения читаются с клавиатуры. Разрядность $n$ читается вызовом \code{read\us{}number} из отрезка $[0, \text{\code{MAX\us{}DEPTH}}]$. При $n = 0$ носитель пуст, и кратность не запрашивается. Иначе $k$ читается вызовом \code{read\us{}number\us{}or\us{}empty} из отрезка $[1, \text{\code{MAX\us{}MULTIPLICITY}}]$, при пустой строке $k = 1 + {}$\code{random\us{}below(MAX\us{}MULTIPLICITY)}, и универсум строится вызовом \code{uniform\us{}universe}. Затем $A$ и $B$ заменяются пустыми мультимножествами над новым носителем, и флаги \code{a\us{}ready}, \code{b\us{}ready} сбрасываются. Выводятся первые \code{PRINT\us{}LIMIT} слов кода, универсум и его мощность, а если $A$ или $B$ были заданы,~--- сообщение об их сбросе. Текст метода приведён в \lnk{lst:createuniverse}{листинге}.
+
+\codefile[firstline=113, lastline=155]{Метод \code{Menu::create\us{}universe}}{lst:createuniverse}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::parse\us{}manual\us{}line}}
+
+Метод разбирает одну строку ручного ввода. На вход подаются строка \code{line}, заполняемое мультимножество \code{target}, остаток мощности \code{left} и пустые векторы \code{indices} и \code{counts}, в которые записываются номера элементов и добавляемые кратности. На выходе получается \code{true}, если строка принята. Строка делится на слова по пробелам; слово имеет вид \code{код:кратность} или \code{код}, во втором случае кратность равна 1. Для каждого слова проверяется, что код является словом длины $n$ (\code{is\us{}code}), кратность~--- число не меньше 1 (\code{parse\us{}number}), а кратность не больше свободного места $\kU - k_{\text{target}}(x) - t$, где $t$~--- кратность того же $x$, уже записанная из этой строки. Номер элемента находит \code{CodeSet::find} (\lnk{fn:find}{п.}). В конце проверяется, что сумма кратностей строки не превосходит \code{left}. При первой ошибке выводится её причина и возвращается \code{false}; \code{target} метод не меняет. Текст метода приведён в \lnk{lst:parseline}{листинге}.
+
+\codefile[firstline=207, lastline=246]{Метод \code{Menu::parse\us{}manual\us{}line}}{lst:parseline}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::fill\us{}manual}}
+
+Метод заполняет мультимножество вручную до заданной мощности. На вход подаются пустое мультимножество \code{target}, мощность \code{cardinality} и имя \code{name} для приглашения. На выходе получается \code{true}, если заполнение завершено, и \code{false}, если введена пустая строка. При \code{cardinality} $= 0$ метод сразу возвращает \code{true}. Иначе строки читаются вызовом \code{read\us{}text}, пока $|\text{\code{target}}| < {}$\code{cardinality}; каждая строка проверяется методом \code{parse\us{}manual\us{}line}, и если она принята, её кратности прибавляются к \code{target} методом \code{set\us{}count}. Текст метода приведён в \lnk{lst:fillmanual}{листинге}.
+
+\codefile[firstline=188, lastline=205]{Метод \code{Menu::fill\us{}manual}}{lst:fillmanual}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::fill\us{}multiset}}
+
+Метод задаёт мультимножество $A$ или $B$. На вход подаются ссылка на мультимножество \code{multiset}, ссылка на его флаг \code{ready} и имя \code{name}; выходных данных нет. Мощность $m$ читается из отрезка $[0, |U|]$, при пустой строке $m = {}$\code{random\us{}below(|U| + 1)}. Способ заполнения читается вызовом \code{read\us{}letter}: \code{r}~--- автоматическое заполнение вызовом \code{random\us{}submultiset(universe, m)}, \code{m}~--- ручное заполнение вызовом \code{fill\us{}manual}, пустая строка~--- отмена. Заполнение выполняется в отдельный объект \code{filled}, и только после успешного завершения он записывается в \code{multiset}, а \code{ready} становится \code{true}; при отмене \code{multiset} не меняется. Текст метода приведён в \lnk{lst:fillmultiset}{листинге}.
+
+\codefile[firstline=157, lastline=186]{Метод \code{Menu::fill\us{}multiset}}{lst:fillmultiset}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::compute\us{}operations}}
+
+Метод не имеет входных данных и возвращает вектор из 13 результатов операций над $A$, $B$ и $U$ в порядке массива \code{OPERATIONS}. Операции $B \setminus A$, $\overline{B}$, $B - A$ и $B / A$ вычисляются вызовом методов объекта \code{b} с аргументом \code{a}. Текст метода приведён в \lnk{lst:compute}{листинге}.
+
+\codefile[firstline=248, lastline=264]{Метод \code{Menu::compute\us{}operations}}{lst:compute}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::show\us{}help}}
+
+Метод не имеет входных и выходных данных. Он выводит справку: запись мультимножества, обозначение, формулу и название каждой из 13 операций из \code{OPERATIONS} и допустимые значения $n$, $k$, $|A|$, $|B|$. Текст метода приведён в \lnk{lst:help}{листинге}.
+
+\codefile[firstline=266, lastline=273]{Метод \code{Menu::show\us{}help}}{lst:help}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::show\us{}table}}
+
+Метод не имеет входных и выходных данных. Он выводит таблицу кратностей: для первых \code{TABLE\us{}LIMIT} слов кода значения $\kU$, $\kA$, $\kB$, а затем строку $\Sigma$ с мощностями $|U|$, $|A|$, $|B|$ по всем словам. У незаданного мультимножества вместо чисел выводится «\code{-}». Ширина столбцов выбирается по числу цифр $|U|$. Текст метода приведён в \lnk{lst:table}{листинге}.
+
+\codefile[firstline=275, lastline=294]{Метод \code{Menu::show\us{}table}}{lst:table}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::show\us{}operations}}
+
+Метод не имеет входных и выходных данных. Он выводит 13 результатов \code{compute\us{}operations} с мощностями и проверяет два равенства. Равенство $|\overline{A}| = |U| - |A|$ следует из~\eqref{eq:compl} и~\eqref{eq:card}, равенство $|A \cup B| + |A \cap B| = |A| + |B|$~--- из~\eqref{eq:union}, \eqref{eq:inter} и тождества $\max(a, b) + \min(a, b) = a + b$. Текст метода приведён в \lnk{lst:showops}{листинге}.
+
+\codefile[firstline=296, lastline=313]{Метод \code{Menu::show\us{}operations}}{lst:showops}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::show\us{}matrix}}
+
+Метод не имеет входных и выходных данных. Он выводит матрицу кратностей: строки соответствуют $U$, $A$, $B$ и 13 результатам операций, столбцы~--- словам кода, последний столбец содержит мощности. Ширина столбца равна $\max(n, 3) + 2$ символов, число столбцов~--- $\min(N, (\text{\code{MATRIX\us{}WIDTH}} - 13) \operatorname{div} (\max(n, 3) + 2))$, где 13~--- ширина подписи строки и столбца мощностей. Мощности считаются по всем словам. Текст метода приведён в \lnk{lst:matrix}{листинге}.
+
+\codefile[firstline=315, lastline=342]{Метод \code{Menu::show\us{}matrix}}{lst:matrix}{\MN.cpp}
+
+\subsubsection{Метод \code{Menu::run}}
+
+Метод выполняет основной цикл программы; входных и выходных данных нет. На каждом шаге выводится строка \code{COMMANDS} и читается команда вызовом \code{read\us{}letter} из букв \code{u a b t o m h q}. Команда \code{q} завершает цикл; для остальных проверяется \code{is\us{}available}, затем вызывается соответствующий метод. Исключение \code{InputClosedError} из функций ввода передаётся в \code{main}. Текст метода приведён в \lnk{lst:run}{листинге}.
+
+\codefile[firstline=79, lastline=95]{Метод \code{Menu::run}}{lst:run}{\MN.cpp}
+
+% ------------------------------------------------------------
+\subsection{Главная функция (\texorpdfstring{\code{main.cpp}}{main.cpp})}\label{sec:mmain}
+
+Функция \code{main} получает на вход число аргументов \code{argc} и массив аргументов \code{argv} и возвращает код завершения. В Windows включается вывод в кодировке UTF-8 вызовом \code{SetConsoleOutputCP(CP\us{}UTF8)}. Если программа запущена с аргументами \code{--seed N}, зерно равно $N$, иначе зерно возвращает \code{make\us{}seed}; зерно передаётся в \code{seed\us{}random} и выводится первой строкой. Затем создаётся объект \code{Menu} и вызывается его метод \code{run}. Исключение \code{InputClosedError} перехватывается, выводится «ввод закончился», и программа возвращает 0. Любое другое исключение~--- наследник \code{std::exception}~--- выводится с префиксом «Внутренняя ошибка:», и программа возвращает 1. Текст функции приведён в \lnk{lst:main}{листинге}.
+
+\codefile[firstline=12, lastline=35]{Функция \code{main}}{lst:main}{listings/src/main.cpp}
+
+% ------------------------------------------------------------
+\subsection{Замер времени (\texorpdfstring{\code{bench.cpp}}{bench.cpp})}\label{sec:mbench}
+
+Программа \code{bench} замеряет время самых долгих действий основной программы при разных $n$; её результаты использованы в \lnk{sec:limits}{подразделе}.
+
+\subsubsection{Функция \code{measure}}
+
+Шаблонная функция получает на вход функциональный объект \code{action} без аргументов, выполняет его три раза и возвращает наименьшее время выполнения в миллисекундах по часам \code{std::chrono::steady\us{}clock}. Текст функции приведён в \lnk{lst:measure}{листинге}.
+
+\codefile[firstline=11, lastline=21]{Функция \code{measure}}{lst:measure}{listings/tools/bench.cpp}
+
+\subsubsection{Функция \code{main} программы \code{bench}}
+
+Функция не имеет входных данных. Она задаёт зерно 1 и для каждого $n$ от 10 до \code{MAX\us{}DEPTH}${} + 2 = 21$ замеряет построение носителя, построение универсума с $k = {}$\code{MAX\us{}MULTIPLICITY}, автоматическое заполнение $A$ с мощностью $|U|$ и вычисление 13 операций над мультимножествами мощностей $|U| / 2$ и $|U| / 3$. Для каждого $n$ выводятся четыре времени и наибольшее из них. Мощности результатов операций суммируются в переменную \code{checksum}, значение которой проверяется после замера, чтобы компилятор не удалил вычисления при оптимизации. Текст функции приведён в \lnk{lst:benchmain}{листинге}.
+
+\codefile[firstline=23, lastline=58]{Функция \code{main} программы \code{bench}}{lst:benchmain}{listings/tools/bench.cpp}
+
+% ------------------------------------------------------------
 \subsection{Ограничения программы}\label{sec:limits}
 
-Ограничения заданы константами. \code{MAX\us{}DEPTH} $= 19$~--- наибольшая разрядность. \code{MAX\us{}MULTIPLICITY} $= 100$~--- наибольшая кратность элемента универсума. \code{MAX\us{}TYPE\us{}DEPTH} $=$ \code{sizeof(size\us{}t) * 8 - 1}~--- предел, при котором $2^n$ ещё помещается в \code{size\us{}t}; в 32-разрядной сборке он равен 31. Через меню ввести $n > 19$ нельзя, поэтому исключение \code{InvalidDepthError} при работе с меню не возникает. Ограничения вывода заданы в \code{Menu.cpp}: \code{TABLE\us{}LIMIT} $= 32$ строк таблицы, \code{PRINT\us{}LIMIT} $= 16$ элементов мультимножества и слов кода, \code{LINE\us{}WIDTH} $= 100$ и \code{MATRIX\us{}WIDTH} $= 112$ символов. Числа вводятся не длиннее 9 цифр.
+Ограничения заданы константами \code{MAX\us{}DEPTH} $= 19$, \code{MAX\us{}MULTIPLICITY} $= 100$ и \code{MAX\us{}TYPE\us{}DEPTH}, а также константами вывода из \code{Menu.cpp}. Через меню ввести $n > 19$ нельзя, поэтому исключение \code{InvalidDepthError} при работе с меню не возникает. Числа вводятся не длиннее 9 цифр.
 
-Значение \code{MAX\us{}DEPTH} выбрано по замеру времени программой \code{bench} (листинг~\ref{lst:bench}). Она для каждого $n$ от 10 до 21 строит носитель, универсум с наибольшей кратностью 100, заполняет $A$ с мощностью $|U|$ (худший случай заполнения) и выполняет все 13 операций, каждое действие трижды, и берёт наименьшее время. Самое долгое действие в таблице~\ref{tab:bench}~--- автоматическое заполнение: оно делает $|U| = 100 \cdot 2^n$ шагов. При $n = 19$ оно занимает около 0,5~с, а при $n = 20$ уже больше 1~с, поэтому выбрано $n \leqslant 19$. Шаг таймера \code{std::chrono::steady\us{}clock} в этой сборке равен примерно 0,5~мс, поэтому значения меньше 1~мс в таблице измерены грубо.
+Значение \code{MAX\us{}DEPTH} выбрано по замеру времени программой \code{bench} (\lnk{sec:mbench}{подраздел}). Она для каждого $n$ от 10 до 21 строит носитель, универсум с наибольшей кратностью 100, заполняет $A$ с мощностью $|U|$ (худший случай заполнения) и выполняет все 13 операций, каждое действие трижды, и берёт наименьшее время. Самое долгое действие в \tabref{bench}~--- автоматическое заполнение: оно делает $|U| = 100 \cdot 2^n$ шагов. При $n = 19$ оно занимает около 0,5~с, а при $n = 20$ уже больше 1~с, поэтому выбрано $n \leqslant 19$. Шаг таймера \code{std::chrono::steady\us{}clock} в этой сборке равен примерно 0,5~мс, поэтому значения меньше 1~мс в таблице измерены грубо.
 
 \begin{table}[H]
 \caption{Время действий в худшем случае, мс}\label{tab:bench}
@@ -574,51 +869,45 @@ $n$ & Код Грея & Универсум & Заполнение $A$ & 13 оп�
 \end{tabular}
 \end{table}
 
-Наибольшая кратность 100 выбрана вместе с \code{MAX\us{}DEPTH}. Автоматическое заполнение делает $m \leqslant |U| = k \cdot 2^n$ шагов, поэтому в худшем случае $m = |U|$ его время растёт пропорционально $k$; замер в таблице~\ref{tab:bench} проводился именно для этого случая при $k = 100$. Значит, при $n \leqslant 19$ и $k \leqslant 100$ любое действие занимает меньше 1~с, а при большей кратности, например $k = 200$, заполнение при $n = 19$ заняло бы, по оценке, около 1~с или больше. С вводом чисел этот предел тоже согласован: при $n = 19$ и $k = 100$ мощность универсума равна $100 \cdot 2^{19} = 52\,428\,800 < 999\,999\,999$, поэтому любую допустимую мощность можно ввести числом не длиннее 9 цифр. Произведение кратностей не больше $100 \cdot 100 = 10\,000$, а сумма мощностей при проверке в \code{show\us{}operations} не больше $2 \cdot 52\,428\,800$, что меньше наибольшего значения 32-разрядного \code{size\us{}t}, равного $2^{32} - 1 = 4\,294\,967\,295$; поэтому переполнения нет и в 32-разрядной сборке.
+Наибольшая кратность 100 выбрана вместе с \code{MAX\us{}DEPTH}. Автоматическое заполнение делает $m \leqslant |U| = k \cdot 2^n$ шагов, поэтому в худшем случае $m = |U|$ его время растёт пропорционально $k$; замер в \tabref{bench} проводился именно для этого случая при $k = 100$. Значит, при $n \leqslant 19$ и $k \leqslant 100$ любое действие занимает меньше 1~с, а при большей кратности, например $k = 200$, заполнение при $n = 19$ заняло бы, по оценке, около 1~с или больше. С вводом чисел этот предел тоже согласован: при $n = 19$ и $k = 100$ мощность универсума равна $100 \cdot 2^{19} = 52\,428\,800 < 999\,999\,999$, поэтому любую допустимую мощность можно ввести числом не длиннее 9 цифр. Произведение кратностей не больше $100 \cdot 100 = 10\,000$, а сумма мощностей при проверке в \code{show\us{}operations} не больше $2 \cdot 52\,428\,800$, что меньше наибольшего значения 32-разрядного \code{size\us{}t}, равного $2^{32} - 1 = 4\,294\,967\,295$; поэтому переполнения нет и в 32-разрядной сборке.
 
 \subsection{Обработка ошибок и защита ввода}
 
-Весь ввод идёт через функцию \code{read\us{}text}: она читает строку целиком и убирает пробелы, табуляции и символы \code{\textbackslash r} по краям. Если ввод закончился (конец файла или Ctrl+Z), выбрасывается \code{InputClosedError}; функция \code{main} перехватывает его, выводит «ввод закончился» и завершает программу с кодом 0.
-
-Числа разбирает \code{parse\us{}number}: допускается только строка из 1--9 цифр, поэтому знак минус, буквы, пробелы внутри числа и слишком длинные числа отклоняются, а переполнение невозможно. Функции \code{read\us{}number} и \code{read\us{}number\us{}or\us{}empty} повторяют запрос, пока не будет введено число из нужного отрезка, а функция \code{report\us{}bad\us{}number} сообщает одну из трёх причин: пустая строка, не целое неотрицательное число, число вне отрезка. Команды меню и способ заполнения читает \code{read\us{}letter}: строка должна состоять из одной допустимой буквы, регистр не важен.
-
-Перед выполнением команды метод \code{is\us{}available} проверяет состояние: без универсума доступны только \code{u}, \code{h} и \code{q}, а операции и матрица требуют, чтобы были заданы оба мультимножества. Сообщение называет, чего не хватает и какой командой это задать.
-
-При ручном вводе метод \code{parse\us{}manual\us{}line} проверяет каждую пару по порядку: код должен состоять из $n$ символов 0 и 1; после двоеточия должна стоять кратность от 1; кратность не должна превышать свободное место у этого кода с учётом уже введённых раньше и в этой же строке единиц; сумма кратностей строки не должна превышать остаток мощности. При любой ошибке строка отбрасывается целиком. Заполнение идёт в копию мультимножества, поэтому при отмене прежнее мультимножество сохраняется.
+Весь ввод идёт через функцию \code{read\us{}text}, а числа и буквы принимаются функциями \code{read\us{}number}, \code{read\us{}number\us{}or\us{}empty} и \code{read\us{}letter} только в допустимом виде; при отказе запрос повторяется с указанием причины (\lnk{sec:minput}{подраздел}). Перед выполнением команды метод \code{is\us{}available} проверяет, заданы ли нужные для неё данные. Строка ручного ввода при первой ошибке отклоняется целиком методом \code{parse\us{}manual\us{}line}, а заполнение идёт в копию мультимножества, поэтому ошибка или отмена не меняют заданное ранее мультимножество. Конец ввода (конец файла или Ctrl+Z) передаётся исключением \code{InputClosedError}; функция \code{main} перехватывает его, выводит «ввод закончился» и завершает программу с кодом 0.
 
 Исключения ядра защищают классы от неправильного использования; меню проверяет ввод заранее, поэтому при работе с ним они не возникают, а если возникнут, \code{main} выведет «Внутренняя ошибка:» и вернёт код~1.
 
 % ============================================================
-\section{Результаты работы}
+\section{Результаты работы}\label{sec:results}
 
-Программа запускалась с вводом из текстовых файлов и параметром \code{--seed}, поэтому все запуски воспроизводимы: номер сценария совпадает с зерном. При вводе из файла программа сама печатает прочитанную строку после приглашения, поэтому на рисунках виден весь ввод. В выводе программы дополнение $\overline{A}$ печатается как \code{¬A}, а произведение $A \cdot B$~--- как \code{A * B}. Каждый рисунок показывает одно или несколько связанных действий.
+Программа запускалась с вводом из текстовых файлов и параметром \code{--seed}, поэтому все запуски воспроизводимы: номер сценария совпадает с зерном. При вводе из файла программа сама печатает прочитанную строку после приглашения, поэтому на рисунках виден весь ввод. Мультимножества выводятся в записи из \lnk{sec:mset}{подраздела}, столбцы \code{kU}, \code{kA}, \code{kB} содержат значения $\kU$, $\kA$, $\kB$. В выводе программы дополнение $\overline{A}$ печатается как \code{¬A}, а произведение $A \cdot B$~--- как \code{A * B}. Каждый рисунок показывает одно или несколько связанных действий.
 
 \FloatBarrier
 \subsection{Корректная работа при \texorpdfstring{$n = 3$}{n = 3}}\label{sec:s1}
 
-Проверяется основной путь работы: справка, создание универсума при $n = 3$ и $k = 3$, автоматическое заполнение $A$, ручное заполнение $B$, таблица кратностей, операции и матрица. Сначала выводится справка с формулами операций и допустимыми значениями (рисунок~\ref{fig:s1_help}); формулы совпадают с таблицей~\ref{tab:ops}.
+Проверяется основной путь работы: справка, создание универсума при $n = 3$ и $k = 3$, автоматическое заполнение $A$, ручное заполнение $B$, таблица кратностей, операции и матрица. Сначала выводится справка с формулами операций и допустимыми значениями (\figref{s1_help}); формулы совпадают с формулами~\eqref{eq:union}--\eqref{eq:adivba}.
 
 \consolefig{s1_help}{Зерно, список команд и справка}
 
-После ввода $n = 3$ и $k = 3$ программа выводит 8 слов кода Грея и универсум мощности $3 \cdot 8 = 24$ (рисунок~\ref{fig:s1_universe}). Порядок слов совпадает с пошаговым построением в таблице~\ref{tab:gray3}.
+После ввода $n = 3$ и $k = 3$ программа выводит 8 слов кода Грея и универсум мощности $3 \cdot 8 = 24$ (\figref{s1_universe}). Порядок слов совпадает с примером выполнения алгоритма~1.2 в~\cite{novikov}.
 
 \consolefig{s1_universe}{Создание универсума при $n = 3$, $k = 3$}
 
-На рисунке~\ref{fig:s1_fill} мультимножество $A$ мощности 10 заполнено автоматически: сумма кратностей $1 + 3 + 1 + 1 + 1 + 3 = 10$, ни одна кратность не больше~3. Мультимножество $B$ мощности 8 введено вручную двумя строками; код \code{110} без двоеточия получил кратность~1.
+На \figref{s1_fill} мультимножество $A$ мощности 10 заполнено автоматически: сумма кратностей $1 + 3 + 1 + 1 + 1 + 3 = 10$, ни одна кратность не превосходит $\kU = 3$. Мультимножество $B$ мощности 8 введено вручную двумя строками; код \code{110} без двоеточия получил кратность~1.
 
 \consolefig{s1_fill}{Автоматическое заполнение $A$ ($|A| = 10$) и ручное заполнение $B$ ($|B| = 8$)}
 
-Таблица кратностей (рисунок~\ref{fig:s1_table}) показывает $\kU$, $\kA$, $\kB$ для каждого слова и мощности 24, 10 и 8 в строке~$\Sigma$.
+Таблица кратностей (\figref{s1_table}) показывает $\kU$, $\kA$, $\kB$ для каждого слова и мощности 24, 10 и 8 в строке~$\Sigma$.
 
 \consolefig{s1_table}{Таблица кратностей}
 
-Результаты всех 13 операций показаны на рисунке~\ref{fig:s1_ops}, а матрица кратностей~--- на рисунке~\ref{fig:s1_matrix}. Обе проверки, которые выводит программа, выполнены: $14 = 24 - 10$ и $16 + 2 = 10 + 8$. Видно также, что $|A \mathbin{\triangle} B| = 15$, а не $|A \cup B| - |A \cap B| = 14$: это следствие формулы симметрической разности, описанной в разделе~\ref{sec:ops}.
+Результаты всех 13 операций показаны на \figref{s1_ops}, а матрица кратностей~--- на \figref{s1_matrix}. Обе проверки, которые выводит программа, выполнены: $14 = 24 - 10$ и $16 + 2 = 10 + 8$. Видно также, что $|A \mathbin{\triangle} B| = 15$, а не $|A \cup B| - |A \cap B| = 14$: это следствие формулы~\eqref{eq:sym}.
 
 \consolefig{s1_ops}{Результаты операций и проверки}
 
 \consolefig{s1_matrix}{Матрица кратностей и выход}
 
-Ручная проверка проведена для слов \code{000} ($\kU = 3$, $\kA = 1$, $\kB = 2$), \code{001} ($3, 3, 0$) и \code{011} ($3, 1, 3$) по формулам таблицы~\ref{tab:ops}. Результаты приведены в таблице~\ref{tab:check}; в последнем столбце~--- значения из столбцов \code{000}, \code{001}, \code{011} матрицы на рисунке~\ref{fig:s1_matrix}. Все значения совпали.
+Ручная проверка проведена для слов \code{000} ($\kU = 3$, $\kA = 1$, $\kB = 2$), \code{001} ($3, 3, 0$) и \code{011} ($3, 1, 3$) по формулам~\eqref{eq:union}--\eqref{eq:adivba}. Результаты приведены в \tabref{check}; в последнем столбце~--- значения из столбцов \code{000}, \code{001}, \code{011} матрицы на \figref{s1_matrix}. Все значения совпали.
 
 \begin{table}[htbp]
 \caption{Ручная проверка операций для трёх слов}\label{tab:check}
@@ -645,53 +934,53 @@ $B / A$ & $2 \operatorname{div} 1 = 2$ & $0 \operatorname{div} 3 = 0$ & $3 \oper
 \FloatBarrier
 \subsection{Некорректный ввод команд и параметров}
 
-Проверяется реакция на команды, недоступные в текущем состоянии, и на неверный ввод в меню и при вводе чисел. Пока универсум не создан, команды \code{a} и \code{o} не выполняются, и программа подсказывает команду~\code{u} (рисунок~\ref{fig:s2_unavail}).
+Проверяется реакция на команды, недоступные в текущем состоянии, и на неверный ввод в меню и при вводе чисел. Пока универсум не создан, команды \code{a} и \code{o} не выполняются, и программа подсказывает команду~\code{u} (\figref{s2_unavail}).
 
 \consolefig{s2_unavail}{Команды до создания универсума}
 
-На рисунке~\ref{fig:s2_menu} в меню введены строка из трёх букв, цифра, пустая строка, повторённая буква и отрицательное число. Каждый раз выводится причина и повторяется приглашение. Прописная буква \code{U} принята как команда~\code{u}.
+На \figref{s2_menu} в меню введены строка из трёх букв, цифра, пустая строка, повторённая буква и отрицательное число. Каждый раз выводится причина и повторяется приглашение. Прописная буква \code{U} принята как команда~\code{u}.
 
 \consolefig{s2_menu}{Неверный ввод команды меню}
 
-При вводе разрядности отклонены значения \code{-1}, \code{20}, \code{abc}, \code{3x} и пустая строка, при вводе кратности~--- \code{0}, \code{101} и \code{-5} (рисунок~\ref{fig:s2_params}). Сообщения различают три причины: не число, число вне отрезка и пустая строка.
+При вводе разрядности отклонены значения \code{-1}, \code{20}, \code{abc}, \code{3x} и пустая строка, при вводе кратности~--- \code{0}, \code{101} и \code{-5} (\figref{s2_params}). Сообщения различают три причины: не число, число вне отрезка и пустая строка.
 
 \consolefig{s2_params}{Неверный ввод разрядности и кратности}
 
-На рисунке~\ref{fig:s2_fill} после создания универсума команды \code{o} и \code{m} всё ещё недоступны, и программа перечисляет, какие мультимножества не заданы. Затем при вводе мощности $A$ отклонены число 9 (больше $|U| = 8$) и буква, при выборе способа заполнения~--- буква \code{z}. Пустая строка отменила заполнение, и команда \code{o} по-прежнему недоступна.
+На \figref{s2_fill} после создания универсума команды \code{o} и \code{m} всё ещё недоступны, и программа перечисляет, какие мультимножества не заданы. Затем при вводе мощности $A$ отклонены число 9 (больше $|U| = 8$) и буква, при выборе способа заполнения~--- буква \code{z}. Пустая строка отменила заполнение, и команда \code{o} по-прежнему недоступна.
 
 \consolefig{s2_fill}{Недоступные команды, неверная мощность, неверный способ заполнения и отмена}
 
 \FloatBarrier
 \subsection{Ошибки при ручном заполнении}
 
-Проверяется разбор строк ручного ввода. Создан универсум при $n = 2$, $k = 2$, и автоматически заполнено $B$ мощности 3 (рисунок~\ref{fig:s3_setup}).
+Проверяется разбор строк ручного ввода. Создан универсум при $n = 2$, $k = 2$, и автоматически заполнено $B$ мощности 3 (\figref{s3_setup}).
 
 \consolefig{s3_setup}{Подготовка: универсум $n = 2$, $k = 2$ и мультимножество $B$}
 
-На рисунке~\ref{fig:s3_errors} заполняется $A$ мощности 5. Отклонены: код неверной длины \code{0:1}, код с буквой \code{0a}, нечисловая кратность \code{00:x}, нулевая кратность \code{00:0}, кратность больше $k$ \code{00:3}, повтор кода в одной строке \code{00:2 00} и строка с суммой 6 при остатке~5. Строка \code{00:2 01} принята, после неё повторный ввод кода \code{00} отклонён, так как у него не осталось места. Пустая строка отменила заполнение.
+На \figref{s3_errors} заполняется $A$ мощности 5. Отклонены: код неверной длины \code{0:1}, код с буквой \code{0a}, нечисловая кратность \code{00:x}, нулевая кратность \code{00:0}, кратность больше $\kU = 2$ \code{00:3}, повтор кода в одной строке \code{00:2 00} и строка с суммой 6 при остатке~5. Строка \code{00:2 01} принята, после неё повторный ввод кода \code{00} отклонён, так как у него не осталось места. Пустая строка отменила заполнение.
 
 \consolefig{s3_errors}{Ошибки ручного ввода и отмена}
 
-После отмены $A$ осталось незаданным: в таблице на рисунке~\ref{fig:s3_table} в столбце \code{kA} стоят прочерки, а частично введённые значения не сохранились.
+После отмены $A$ осталось незаданным: в таблице на \figref{s3_table} в столбце \code{kA} стоят прочерки, а частично введённые значения не сохранились.
 
 \consolefig{s3_table}{Таблица после отмены заполнения $A$}
 
-Затем $A$ мощности 3 введено одной строкой, а ручной ввод $B$ мощности 4 отменён пустой строкой (рисунок~\ref{fig:s3_ok}). Таблица в конце рисунка показывает, что прежнее $B$ с кратностями $1, 0, 2, 0$ сохранилось.
+Затем $A$ мощности 3 введено одной строкой, а ручной ввод $B$ мощности 4 отменён пустой строкой (\figref{s3_ok}). Таблица в конце рисунка показывает, что прежнее $B$ с кратностями $1, 0, 2, 0$ сохранилось.
 
 \consolefig{s3_ok}{Успешное заполнение $A$ и отмена ввода $B$ с сохранением прежнего значения}
 
 \FloatBarrier
 \subsection{Граничные значения мощности и кратности}
 
-Проверяются мощность, равная мощности универсума, нулевая мощность, наименьшая и наибольшая кратность. Создан универсум при $n = 2$ с наименьшей кратностью $k = 1$, $A$ заполнено автоматически с мощностью $|U| = 4$, $B$~--- с мощностью 0 (рисунок~\ref{fig:s4_fill}). При $|A| = |U|$ автоматическое заполнение даёт $A = U$.
+Проверяются мощность, равная мощности универсума, нулевая мощность, наименьшая и наибольшая кратность. Создан универсум при $n = 2$ с наименьшей кратностью $k = 1$, $A$ заполнено автоматически с мощностью $|U| = 4$, $B$~--- с мощностью 0 (\figref{s4_fill}). При $|A| = |U|$ автоматическое заполнение даёт $A = U$.
 
 \consolefig{s4_fill}{Универсум с $k = 1$, $|A| = |U|$ и $|B| = 0$}
 
-Результаты операций (рисунок~\ref{fig:s4_ops}) соответствуют формулам: $\overline{A}$ пусто, $\overline{B} = U$, $A \cup B = A \setminus B = A - B = U$, пересечение и произведение пусты. Деление $A / B$ даёт пустое мультимножество, так как при $\kB = 0$ результат равен нулю.
+Результаты операций (\figref{s4_ops}) соответствуют формулам: $\overline{A}$ пусто, $\overline{B} = U$, $A \cup B = A \setminus B = A - B = U$, пересечение и произведение пусты. Деление $A / B$ даёт пустое мультимножество, так как по~\eqref{eq:adiv} при $\kB = 0$ результат равен нулю.
 
 \consolefig{s4_ops}{Операции при $A = U$ и $B = \varnothing$}
 
-Далее универсум пересоздан при $n = 1$ с наибольшей кратностью $k = 100$, мощность $|U| = 200$; программа сообщила, что $A$ и $B$ сброшены. Мультимножество $A$ мощности 200 введено вручную одной строкой \code{0:100 1:100}, а при ручном заполнении $B$ с мощностью 0 строки не запрашивались (рисунок~\ref{fig:s4_max}). Операции для этого случая показаны на рисунке~\ref{fig:s4_ops2}.
+Далее универсум пересоздан при $n = 1$ с наибольшей кратностью $k = 100$, мощность $|U| = 200$; программа сообщила, что $A$ и $B$ сброшены. Мультимножество $A$ мощности 200 введено вручную одной строкой \code{0:100 1:100}, а при ручном заполнении $B$ с мощностью 0 строки не запрашивались (\figref{s4_max}). Операции для этого случая показаны на \figref{s4_ops2}.
 
 \consolefig{s4_max}{Универсум с $k = 100$ и ручной ввод при $|A| = |U|$ и $|B| = 0$}
 
@@ -700,34 +989,34 @@ $B / A$ & $2 \operatorname{div} 1 = 2$ & $0 \operatorname{div} 3 = 0$ & $3 \oper
 \FloatBarrier
 \subsection{Пустой универсум, пересоздание и конец ввода}
 
-Проверяется разрядность $n = 0$, при которой программа по соглашению из подраздела~1.1 считает код Грея пустым. Кратность в этом случае не запрашивается, универсум пуст, допустимая мощность $A$ и $B$~--- только 0, а при пустой строке случайная мощность тоже равна 0 (рисунок~\ref{fig:s5_zero}).
+Проверяется разрядность $n = 0$, при которой программа по соглашению из \lnk{sec:mset}{подраздела} считает код Грея пустым. Кратность в этом случае не запрашивается, универсум пуст, допустимая мощность $A$ и $B$~--- только 0, а при пустой строке случайная мощность тоже равна 0 (\figref{s5_zero}).
 
 \consolefig{s5_zero}{Универсум при $n = 0$ и пустые $A$, $B$}
 
-Все операции дают пустые мультимножества, проверки выполнены (рисунок~\ref{fig:s5_ops}). Матрица при $n = 0$ не содержит ни одного столбца с кодом, в ней выводятся только нулевые мощности.
+Все операции дают пустые мультимножества, проверки выполнены (\figref{s5_ops}). Матрица при $n = 0$ не содержит ни одного столбца с кодом, в ней выводятся только нулевые мощности.
 
 \consolefig{s5_ops}{Операции при $n = 0$}
 
-Затем универсум пересоздан при $n = 4$ с пустой строкой вместо кратности: программа выбрала $k = 6$, вывела все 16 слов кода, $|U| = 96$, и сообщила о сбросе $A$ и $B$ (рисунок~\ref{fig:s5_recreate}). В следующей за этим таблице у $A$ и $B$ стоят прочерки. После неё входной файл закончился без команды \code{q}, и программа завершилась сообщением «ввод закончился».
+Затем универсум пересоздан при $n = 4$ с пустой строкой вместо кратности: программа выбрала $k = 6$, вывела все 16 слов кода, $|U| = 96$, и сообщила о сбросе $A$ и $B$ (\figref{s5_recreate}). В следующей за этим таблице у $A$ и $B$ стоят прочерки. После неё входной файл закончился без команды \code{q}, и программа завершилась сообщением «ввод закончился».
 
 \consolefig{s5_recreate}{Пересоздание универсума со случайной кратностью, таблица после сброса и конец ввода}
 
 \FloatBarrier
 \subsection{Наибольшая разрядность}
 
-Проверяется работа при $n = 19$ и ограничения вывода. Код Грея содержит $2^{19} = 524\,288$ слов; программа выводит первые 16 и число остальных, мощность универсума при $k = 5$ равна $2\,621\,440$ (рисунок~\ref{fig:s6_universe}).
+Проверяется работа при $n = 19$ и ограничения вывода. Код Грея содержит $2^{19} = 524\,288$ слов; программа выводит первые 16 и число остальных, мощность универсума при $k = 5$ равна $2\,621\,440$ (\figref{s6_universe}).
 
 \consolefig{s6_universe}{Универсум при $n = 19$, $k = 5$}
 
-Мощность $A$ выбрана случайно и равна $2\,341\,150$, мощность $B$ задана числом $1\,000\,000$ (рисунок~\ref{fig:s6_fill}). В записи мультимножеств показаны только первые элементы и число скрытых.
+Мощность $A$ выбрана случайно и равна $2\,341\,150$, мощность $B$ задана числом $1\,000\,000$ (\figref{s6_fill}). В записи мультимножеств показаны только первые элементы и число скрытых.
 
 \consolefig{s6_fill}{Автоматическое заполнение $A$ и $B$ при $n = 19$}
 
-Таблица кратностей ограничена 32 строками, но строка $\Sigma$ содержит мощности по всем элементам (рисунок~\ref{fig:s6_table}).
+Таблица кратностей ограничена 32 строками, но строка $\Sigma$ содержит мощности по всем элементам (\figref{s6_table}).
 
 \consolefig{s6_table}{Таблица кратностей при $n = 19$}
 
-Обе проверки на рисунке~\ref{fig:s6_ops} выполнены: $280\,290 = 2\,621\,440 - 2\,341\,150$ и $2\,376\,201 + 964\,949 = 2\,341\,150 + 1\,000\,000$. Матрица (рисунок~\ref{fig:s6_matrix}) показывает 4 столбца, которые помещаются в ширину 112 символов, а мощности считаются по всем словам. После неё ввод $n = 20$ отклонён, так как это больше \code{MAX\us{}DEPTH}, и ввод закончился.
+Обе проверки на \figref{s6_ops} выполнены: $280\,290 = 2\,621\,440 - 2\,341\,150$ и $2\,376\,201 + 964\,949 = 2\,341\,150 + 1\,000\,000$. Матрица (\figref{s6_matrix}) показывает 4 столбца, которые помещаются в ширину 112 символов, а мощности считаются по всем словам. После неё ввод $n = 20$ отклонён, так как это больше \code{MAX\us{}DEPTH}, и ввод закончился.
 
 \consolefig{s6_ops}{Операции при $n = 19$}
 
@@ -736,45 +1025,20 @@ $B / A$ & $2 \operatorname{div} 1 = 2$ & $0 \operatorname{div} 3 = 0$ & $3 \oper
 % ============================================================
 \structsection{ЗАКЛЮЧЕНИЕ}
 
-В ходе работы разработана программа для работы с мультимножествами, элементами которых служат слова бинарного кода Грея.
+Реализована генерация бинарного кода Грея разрядности $n$, $0 \leqslant n \leqslant 19$, по алгоритму из~\cite{novikov} с трудоёмкостью $O(2^n)$ и построение по нему универсума $U$ с кратностью $\kU = k$, $1 \leqslant k \leqslant 100$. Реализовано формирование мультимножеств $A, B \subseteq U$ заданной мощности ручным и автоматическим заполнением; трудоёмкость автоматического заполнения $O(2^n)$. Реализованы объединение, пересечение, разности $A \setminus B$ и $B \setminus A$, симметрическая разность, дополнения $\overline{A}$ и $\overline{B}$, арифметические сумма, разности, произведение и деления, трудоёмкость каждой операции $O(2^n)$. Реализованы защита от некорректного ввода с выводом причины отказа и меню, которое не выполняет команду до задания необходимых для неё данных. Работа программы проверена на шести сценариях, включая граничные значения $n$, $k$, $|A|$, $|B|$ и обрыв ввода (\lnk{sec:results}{раздел}).
 
-Программа генерирует бинарный код Грея разрядности $n$ от 0 до 19, которую задаёт пользователь, и заполняет его словами универсум мультимножеств с одинаковой кратностью $k$ от 1 до 100; при этих пределах любое действие программы занимает меньше 1~с (таблица~\ref{tab:bench}). На основе универсума программа формирует два мультимножества $A$ и~$B$ с мощностями, которые задаёт пользователь, причём способ заполнения каждого из них~--- вручную или автоматически~--- пользователь выбирает сам. Программа вычисляет и выводит результаты операций над $A$ и~$B$: объединения, пересечения, разностей $A \setminus B$ и $B \setminus A$, симметрической разности, дополнений $\overline{A}$ и $\overline{B}$, арифметических суммы, разности, произведения и деления. Результаты выводятся записью мультимножеств и матрицей кратностей, а две проверки мощностей программа выполняет сама. Программа защищена от некорректного ввода и указывает причину ошибки, а в пользовательском меню недоступные команды объясняют, чего не хватает. Работа программы проверена на шести сценариях, ручной расчёт операций для трёх слов совпал с выводом программы.
+Достоинства реализации следующие. Генерация кода Грея выполняется без рекурсии и требует менее $2 \cdot 2^n$ проверок чётности (формула~\eqref{eq:cost}). Номер слова при ручном вводе определяется за $O(n)$ по таблице \code{positions}, без просмотра кода. По формулам~\eqref{eq:union}--\eqref{eq:adivba} результат любой операции является подмультимножеством $U$, поэтому проверка результата не требуется. Разность и симметрическая разность вычисляются через пересечение, объединение и дополнение, без отдельных циклов. Строка ручного ввода с ошибкой отклоняется целиком, а заполнение выполняется в копию мультимножества, поэтому ошибка или отмена не изменяют заданное ранее мультимножество. Параметр \code{--seed} обеспечивает воспроизводимость запуска.
 
-Программа обладает рядом преимуществ. Код Грея строится без рекурсии за $O(2^n)$, так как алгоритм делает $2^n - 1$ шагов, а общее число проверок при поиске меняемых разрядов меньше $2 \cdot 2^n$~\eqref{eq:cost}. Номер слова при ручном вводе находится за $O(n)$ по обратной таблице номеров, без просмотра всей последовательности. Кроме того, гарантируется математическая замкнутость: результаты всех операций являются подмультимножествами универсума и вычисляются за $O(2^n)$, а автоматическое заполнение за $O(2^n + m)$ даёт мощность ровно $m$, не превышая кратностей универсума.
+Недостаток реализации~--- время автоматического заполнения. На каждую единицу мощности выполняется один случайный выбор, поэтому при $m \leqslant |U| = k \cdot 2^n$ и $k \leqslant 100$ выполняется до $100 \cdot 2^n$ выборов. При $n = 20$ заполнение занимает 2,7~с (\tabref{bench}), из-за этого разрядность ограничена значением 19. Недостаток устраняется выбором кратности каждого элемента за один шаг: элементы $x_1, \ldots, x_N$ обходятся по порядку, и $k_A(x_i)$ выбирается из гипергеометрического распределения по числу ещё не просмотренных единиц $U$, кратности $k$ и остатку мощности. Число случайных выборов становится равным $2^n$ независимо от $k$ и $m$, мощность и условие $A \subseteq U$ сохраняются, интерфейс функции \code{random\us{}submultiset} не меняется.
 
-Вместе с тем у программы есть недостатки. Каждое мультимножество занимает $O(2^n)$ памяти независимо от мощности, так как хранятся кратности всех слов носителя, включая нулевые. Основным узким местом является автоматическое заполнение: при трудоёмкости $O(2^n + m)$ и $m$, близких к $|U| = k \cdot 2^n$, оно занимает около 0,5~с при $n = 19$ и больше 1~с при $n = 20$ (таблица~\ref{tab:bench}), поэтому разрядность ограничена значением 19. Наконец, универсум может быть только равномерным, так как пользователь задаёт одну кратность $k$ для всех слов.
+Ядро программы не зависит от интерфейса: ядро не выполняет ввод и вывод, а интерфейс не вычисляет операции. Результат каждой операции является мультимножеством над тем же носителем, поэтому операции можно применять к результатам других операций. Это позволяет без изменения ядра реализовать на основе существующих функций операции над тремя и более мультимножествами, вычисление произвольных выражений из реализованных операций, проверку включения и равенства мультимножеств, построение случайного подмультимножества любого заданного мультимножества, а не только универсума, и проверку тождеств алгебры мультимножеств на случайных данных.
 
-Программа масштабируема: ядро не зависит от интерфейса, поэтому новые возможности добавляются отдельными функциями без изменения ядра. Например, новые теоретико-множественные операции конструируются на базе существующих~--- именно так построены разность и симметрическая разность. Неравномерный универсум можно задать отдельной функцией, так как мультимножество хранится как произвольная функция кратности, а другой способ заполнения добавляется отдельной функцией, возвращающей мультимножество.
+В ходе работы получены навыки представления мультимножества в программе функцией кратности, реализации операций над мультимножествами поэлементными вычислениями над массивом кратностей и обоснования ограничений программы замером времени в худшем случае.
 
 % ============================================================
 \begin{thebibliography}{9}
-\bibitem{novikov} Новиков, Ф.\,А. Дискретная математика для программистов : учебник для вузов / Ф.\,А.~Новиков.~--- 3-е изд.~--- Санкт-Петербург : Питер, 2009.~--- 384~с.
-\bibitem{vostrov} Востров, А.\,В. Дискретная математика : курс лекций / А.\,В.~Востров ; Санкт-Петербургский политехнический университет Петра Великого.~--- Санкт-Петербург, 2026.~--- URL: \url{https://tema.spbstu.ru/dismath_lect/} (дата обращения: 04.10.2026).~--- Текст : электронный.
+\bibitem{novikov} Новиков, Ф.\,А. Дискретная математика для программистов : учебник для вузов / Ф.\,А.~Новиков.~-- 3-е изд.~-- Санкт-Петербург : Питер, 2009.~-- 384~с.~-- (Учебник для вузов).~-- ISBN 978-5-91180-759-7.~-- Текст : непосредственный.
+\bibitem{vostrov} Востров, А.\,В. Дискретная математика : курс лекций / А.\,В.~Востров ; Санкт-Петербургский политехнический университет Петра Великого.~-- Санкт-Петербург, 2026.~-- URL: \url{https://tema.spbstu.ru/dismath_lect/} (дата обращения: 04.10.2026).~-- Текст : электронный.
 \end{thebibliography}
-
-% ============================================================
-\clearpage
-\phantomsection
-\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ А Текст программы}
-\begin{center}\textbf{ПРИЛОЖЕНИЕ А}\\\textbf{Текст программы}\end{center}
-\vspace{6pt}
-
-В приложении приведены исходные файлы проекта: файл сборки (листинг~\ref{lst:cmake}), главный файл (листинг~\ref{lst:main}), файлы интерфейса (листинги~\ref{lst:inputh}, \ref{lst:inputc}, \ref{lst:menuh}, \ref{lst:menuc}), файлы ядра (листинги~\ref{lst:grayh}, \ref{lst:grayc}, \ref{lst:multih}, \ref{lst:multic}, \ref{lst:randh}, \ref{lst:randc}, \ref{lst:univh}, \ref{lst:univc}) и программа замера времени (листинг~\ref{lst:bench}).
-
-\codefile{\code{CMakeLists.txt}}{lst:cmake}{listings/CMakeLists.txt}
-\codefile{\code{src/main.cpp}}{lst:main}{listings/src/main.cpp}
-\codefile{\code{src/ui/Input.hpp}}{lst:inputh}{listings/src/ui/Input.hpp}
-\codefile{\code{src/ui/Input.cpp}}{lst:inputc}{listings/src/ui/Input.cpp}
-\codefile{\code{src/ui/Menu.hpp}}{lst:menuh}{listings/src/ui/Menu.hpp}
-\codefile{\code{src/ui/Menu.cpp}}{lst:menuc}{listings/src/ui/Menu.cpp}
-\codefile{\code{src/core/GrayCode.hpp}}{lst:grayh}{listings/src/core/GrayCode.hpp}
-\codefile{\code{src/core/GrayCode.cpp}}{lst:grayc}{listings/src/core/GrayCode.cpp}
-\codefile{\code{src/core/Multiset.hpp}}{lst:multih}{listings/src/core/Multiset.hpp}
-\codefile{\code{src/core/Multiset.cpp}}{lst:multic}{listings/src/core/Multiset.cpp}
-\codefile{\code{src/core/Random.hpp}}{lst:randh}{listings/src/core/Random.hpp}
-\codefile{\code{src/core/Random.cpp}}{lst:randc}{listings/src/core/Random.cpp}
-\codefile{\code{src/core/Universe.hpp}}{lst:univh}{listings/src/core/Universe.hpp}
-\codefile{\code{src/core/Universe.cpp}}{lst:univc}{listings/src/core/Universe.cpp}
-\codefile{\code{tools/bench.cpp}}{lst:bench}{listings/tools/bench.cpp}
 
 \end{document}
