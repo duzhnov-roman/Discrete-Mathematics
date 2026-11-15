@@ -1,58 +1,47 @@
 #include "core/GrayCode.hpp"
-#include "core/Multiset.hpp"
-#include "core/Random.hpp"
-#include "core/Universe.hpp"
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <vector>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
-template<class Action>
-static double measure(Action action){
-    double best = 1e18;
-    for(int run = 0; run < 3; run++){
-        auto start = std::chrono::steady_clock::now();
-        action();
-        auto finish = std::chrono::steady_clock::now();
-        best = std::min(best, std::chrono::duration<double, std::milli>(finish - start).count());
-    }
-    return best;
+static double seconds(){
+#ifdef _WIN32
+    static const double frequency = []{
+        LARGE_INTEGER value;
+        QueryPerformanceFrequency(&value);
+        return static_cast<double>(value.QuadPart);
+    }();
+    LARGE_INTEGER value;
+    QueryPerformanceCounter(&value);
+    return static_cast<double>(value.QuadPart) / frequency;
+#else
+    return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+#endif
 }
 
 int main(){
-    seed_random(1);
-    std::cout << " n   код Грея   универсум   заполнение A   13 операций   наибольшее, мс" << std::endl;
-    for(size_t depth = 10; depth <= MAX_DEPTH + 2; depth++){
-        std::shared_ptr<const CodeSet> carrier;
-        double t_code = measure([&]{ carrier = std::make_shared<CodeSet>(depth); });
-
-        Multiset universe(carrier);
-        double t_universe = measure([&]{ universe = uniform_universe(carrier, MAX_MULTIPLICITY); });
-
-        Multiset a(carrier);
-        Multiset b(carrier);
-        double t_fill = measure([&]{ a = random_submultiset(universe, universe.cardinality()); });
-        a = random_submultiset(universe, universe.cardinality() / 2);
-        b = random_submultiset(universe, universe.cardinality() / 3);
-
-        size_t checksum = 0;
-        double t_operations = measure([&]{
-            checksum += a.unite(b).cardinality() + a.intersect(b).cardinality()
-                      + a.difference(b, universe).cardinality() + b.difference(a, universe).cardinality()
-                      + a.symmetric_difference(b, universe).cardinality()
-                      + a.complement(universe).cardinality() + b.complement(universe).cardinality()
-                      + a.arithmetic_sum(b, universe).cardinality() + a.arithmetic_difference(b).cardinality()
-                      + b.arithmetic_difference(a).cardinality() + a.arithmetic_product(b, universe).cardinality()
-                      + a.arithmetic_division(b).cardinality() + b.arithmetic_division(a).cardinality();
-        });
-
-        double worst = std::max({t_code, t_universe, t_fill, t_operations});
-        std::cout << std::fixed << std::setprecision(1) << std::setw(2) << depth
-                  << std::setw(11) << t_code << std::setw(12) << t_universe << std::setw(15) << t_fill
-                  << std::setw(14) << t_operations << std::setw(17) << worst
-                  << (worst < 1000 ? "" : "  > 1 с") << std::endl;
-        if(checksum == 0) std::cout << "";
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+    const size_t runs = 21;
+    std::cout << "Формирование универсума U; медиана " << runs << " измерения после прогрева" << std::endl;
+    std::cout << " n   время формирования, мс" << std::endl;
+    for(size_t depth = 10; depth <= MAX_DEPTH; depth++){
+        std::vector<double> samples;
+        for(size_t run = 0; run <= runs; run++){
+            double start = seconds();
+            auto carrier = std::make_shared<CodeSet>(depth);
+            double finish = seconds();
+            if(carrier->size() != (size_t(1) << depth)) return 1;
+            if(run > 0) samples.push_back((finish - start) * 1000.0);
+        }
+        std::sort(samples.begin(), samples.end());
+        std::cout << std::setw(2) << depth << std::fixed << std::setprecision(4)
+                  << std::setw(25) << samples[runs / 2] << std::endl;
     }
-    return 0;
 }

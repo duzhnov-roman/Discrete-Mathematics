@@ -12,13 +12,13 @@
 int main(int argc, char* argv[]){
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
 #endif
     unsigned seed = make_seed();
     if(argc == 3 && std::strcmp(argv[1], "--seed") == 0){
         seed = static_cast<unsigned>(std::strtoul(argv[2], nullptr, 10));
     }
     seed_random(seed);
-    std::cout << "seed = " << seed << std::endl;
 
     try{
         Menu menu;

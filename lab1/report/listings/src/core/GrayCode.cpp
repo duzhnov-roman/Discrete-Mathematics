@@ -15,9 +15,6 @@ std::vector<size_t> generate_gray_code(size_t depth){
         throw InvalidDepthError();
     }
     std::vector<size_t> codes;
-    if(depth == 0){
-        return codes;
-    }
     size_t count = size_t(1) << depth;
     codes.reserve(count);
     size_t code = 0;

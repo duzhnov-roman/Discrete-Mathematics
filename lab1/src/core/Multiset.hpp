@@ -77,6 +77,6 @@ public:
 // незаполненный элемент получает +1 к кратности
 Multiset random_submultiset(const Multiset& bound, size_t cardinality);
 
-// запись вида {000×2, 011×1}; элементы с нулевой кратностью не выводятся;
+// запись вида ⟨2(000), 1(011)⟩; элементы с нулевыми показателями не выводятся;
 void print_multiset(std::ostream& out, const Multiset& multiset, size_t limit);
 std::ostream& operator<<(std::ostream& out, const Multiset& multiset);

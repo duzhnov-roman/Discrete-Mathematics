@@ -20,19 +20,17 @@ struct OperationInfo{
 };
 
 static const OperationInfo OPERATIONS[] = {
-    {"объединение", "A ∪ B", "max(kA, kB)"},
-    {"пересечение", "A ∩ B", "min(kA, kB)"},
-    {"разность", "A \\ B", "min(kA, kU - kB)"},
-    {"разность", "B \\ A", "min(kB, kU - kA)"},
-    {"симметрическая разность", "A ∆ B", "max(k[A\\B], k[B\\A])"},
-    {"дополнение", "¬A", "kU - kA"},
-    {"дополнение", "¬B", "kU - kB"},
-    {"арифметическая сумма", "A + B", "min(kA + kB, kU)"},
-    {"арифметическая разность", "A - B", "max(kA - kB, 0)"},
-    {"арифметическая разность", "B - A", "max(kB - kA, 0)"},
-    {"арифметическое произведение", "A * B", "min(kA * kB, kU)"},
-    {"арифметическое деление", "A / B", "kA div kB; 0 при kB = 0"},
-    {"арифметическое деление", "B / A", "kB div kA; 0 при kA = 0"},
+    {"объединение", "A ∪ B", "max(a_Ai, a_Bi)"},
+    {"пересечение", "A ∩ B", "min(a_Ai, a_Bi)"},
+    {"разность", "A \\ B", "min(a_Ai, k - a_Bi)"},
+    {"разность", "B \\ A", "min(a_Bi, k - a_Ai)"},
+    {"симметрическая разность", "A △ B", "max(min(a_Ai, k - a_Bi), min(a_Bi, k - a_Ai))"},
+    {"дополнение", "¬A", "k - a_Ai"},
+    {"дополнение", "¬B", "k - a_Bi"},
+    {"арифметическая сумма", "A + B", "min(a_Ai + a_Bi, k)"},
+    {"арифметическая разность", "A - B", "max(a_Ai - a_Bi, 0)"},
+    {"арифметическое произведение", "A * B", "min(a_Ai * a_Bi, k)"},
+    {"арифметическое деление", "A : B", "⌊a_Ai : a_Bi⌋; 0 при a_Bi = 0"},
 };
 static const size_t OPERATION_COUNT = sizeof(OPERATIONS) / sizeof(OPERATIONS[0]);
 
@@ -127,18 +125,12 @@ void Menu::create_universe(){
     Multiset new_universe(new_carrier);
     size_t multiplicity = 0;
 
-    if(size == 0){
-        // элементов нет, поэтому и кратность задавать некому
-        std::cout << "при n = 0 в коде Грея нет слов, кратность не нужна" << std::endl;
+    if(!read_number_or_empty("k [1.." + std::to_string(MAX_MULTIPLICITY) + ", Enter - случайно]: ",
+                             1, MAX_MULTIPLICITY, multiplicity)){
+        multiplicity = 1 + random_below(MAX_MULTIPLICITY);
+        std::cout << "k = " << multiplicity << std::endl;
     }
-    else{
-        if(!read_number_or_empty("k [1.." + std::to_string(MAX_MULTIPLICITY) + ", Enter - случайно]: ",
-                                 1, MAX_MULTIPLICITY, multiplicity)){
-            multiplicity = 1 + random_below(MAX_MULTIPLICITY);
-            std::cout << "k = " << multiplicity << std::endl;
-        }
-        new_universe = uniform_universe(new_carrier, multiplicity);
-    }
+    new_universe = uniform_universe(new_carrier, multiplicity);
 
     bool had_multisets = a_ready || b_ready;
     carrier = new_carrier;
@@ -152,27 +144,28 @@ void Menu::create_universe(){
     // не больше PRINT_LIMIT слов кода, в строке столько, сколько помещается в LINE_WIDTH
     if(size > 0){
         size_t shown = std::min(size, PRINT_LIMIT);
-        size_t per_line = std::max<size_t>(1, LINE_WIDTH / (depth + 1));
-        std::cout << "код Грея, 2^" << depth << " = " << size << ":";
+        size_t per_line = std::max<size_t>(1, LINE_WIDTH / (depth + 2));
+        std::cout << "U = {";
         for(size_t i = 0; i < shown; i++){
+            if(i > 0) std::cout << ", ";
             if(shown > per_line && i % per_line == 0) std::cout << std::endl;
-            else if(i > 0 || shown <= per_line) std::cout << " ";
-            std::cout << carrier->get_code(i);
+            std::cout << (depth == 0 ? "ε" : carrier->get_code(i));
         }
-        std::cout << std::endl;
-        if(shown < size) std::cout << "... и ещё " << size - shown << std::endl;
+        if(shown < size) std::cout << ", ... ещё " << size - shown << " слов";
+        std::cout << "}, N = 2^" << depth << " = " << size << std::endl;
+        if(depth == 0) std::cout << "ε - пустое слово длины 0" << std::endl;
     }
-    std::cout << "U = " << format_multiset(universe) << ", |U| = " << universe.cardinality() << std::endl;
+    std::cout << "Û = " << format_multiset(universe) << ", m_Û = " << universe.cardinality() << std::endl;
     if(had_multisets) std::cout << "A и B сброшены" << std::endl;
 }
 
 void Menu::fill_multiset(Multiset& multiset, bool& ready, const std::string& name){
     size_t high = universe.cardinality();
     size_t cardinality = 0;
-    if(!read_number_or_empty("|" + name + "| [0.." + std::to_string(high) + ", Enter - случайно]: ",
+    if(!read_number_or_empty("m_" + name + " [0.." + std::to_string(high) + ", Enter - случайно]: ",
                              0, high, cardinality)){
         cardinality = random_below(high + 1);
-        std::cout << "|" << name << "| = " << cardinality << std::endl;
+        std::cout << "m_" << name << " = " << cardinality << std::endl;
     }
     char method = read_letter("r - случайно, m - вручную, Enter - отмена: ", "rm", true);
     if(method == '\0'){
@@ -194,14 +187,15 @@ void Menu::fill_multiset(Multiset& multiset, bool& ready, const std::string& nam
 
     multiset = filled;
     ready = true;
-    std::cout << name << " = " << format_multiset(multiset) << ", |" << name << "| = "
+    std::cout << name << " = " << format_multiset(multiset) << ", m_" << name << " = "
               << multiset.cardinality() << std::endl;
 }
 
 bool Menu::fill_manual(Multiset& target, size_t cardinality, const std::string& name) const{
     if(cardinality == 0) return true;
-    std::cout << "пары код:кратность через пробел (01:2 11), каждого кода не больше "
+    std::cout << "пары код:показатель через пробел (01:2 11), показатель каждого кода не больше "
               << universe.get_count(0) << ", Enter - отмена" << std::endl;
+    if(carrier->get_depth() == 0) std::cout << "пустое слово вводится как ε (например, ε:2)" << std::endl;
     while(target.cardinality() < cardinality){
         size_t left = cardinality - target.cardinality();
         std::string line = read_text(name + " = " + format_multiset(target) + ", осталось " + std::to_string(left) + ": ");
@@ -228,13 +222,14 @@ bool Menu::parse_manual_line(const std::string& line, const Multiset& target, si
     while(words >> word){
         size_t colon = word.find(':');
         std::string code = word.substr(0, colon);
+        if(depth == 0 && code == "ε") code.clear();
         size_t count = 1;
         if(!is_code(code, depth)){
             std::cout << "! «" << word << "»: код должен состоять из " << depth << " символов 0 и 1" << std::endl;
             return false;
         }
         if(colon != std::string::npos && (!parse_number(word.substr(colon + 1), count) || count == 0)){
-            std::cout << "! «" << word << "»: после двоеточия нужна кратность - целое число от 1" << std::endl;
+            std::cout << "! «" << word << "»: после двоеточия нужен показатель - целое число от 1" << std::endl;
             return false;
         }
         size_t index = 0;
@@ -246,7 +241,7 @@ bool Menu::parse_manual_line(const std::string& line, const Multiset& target, si
         }
         size_t free = universe.get_count(index) - std::min(taken, universe.get_count(index));
         if(count > free){
-            std::cout << "! «" << word << "»: у " << code << " свободно " << free << " (kU = "
+            std::cout << "! «" << word << "»: у " << (depth == 0 ? "ε" : code) << " свободно " << free << " (k = "
                       << universe.get_count(index) << ", занято " << taken << ")" << std::endl;
             return false;
         }
@@ -272,31 +267,33 @@ std::vector<Multiset> Menu::compute_operations() const{
     res.push_back(b.complement(universe));
     res.push_back(a.arithmetic_sum(b, universe));
     res.push_back(a.arithmetic_difference(b));
-    res.push_back(b.arithmetic_difference(a));
     res.push_back(a.arithmetic_product(b, universe));
     res.push_back(a.arithmetic_division(b));
-    res.push_back(b.arithmetic_division(a));
     return res;
 }
 
 void Menu::show_help() const{
-    std::cout << "запись {000×2, 011×1}: код Грея × кратность, {} - пустое; kU, kA, kB - кратности в U, A, B" << std::endl;
+    std::cout << "U - универсум слов кода Грея; N = 2^n; Û - мультимножество над U" << std::endl;
+    std::cout << "⟨2(000), 1(011)⟩: показатель(слово); ⟨⟩ - пустое мультимножество" << std::endl;
+    std::cout << "a_Ai, a_Bi, a_Ui - показатели a_Ai(x_i), a_Bi(x_i), a_Ûi(x_i); a_Ui = k" << std::endl;
+    std::cout << "m_X - мощность мультимножества X; m_Û = k * 2^n; нулевые показатели не выводятся" << std::endl;
+    std::cout << "¬A, ¬B - дополнения до Û; ⌊a : b⌋ - целая часть частного" << std::endl;
     for(size_t i = 0; i < OPERATION_COUNT; i++){
-        std::cout << pad_right(OPERATIONS[i].notation, 7) << pad_right(OPERATIONS[i].formula, 26)
-                  << OPERATIONS[i].title << std::endl;
+        std::cout << pad_right(OPERATIONS[i].notation, 7) << OPERATIONS[i].formula
+                  << "  - " << OPERATIONS[i].title << std::endl;
     }
-    std::cout << "0 <= n <= " << MAX_DEPTH << ", 1 <= k <= " << MAX_MULTIPLICITY << ", 0 <= |A|, |B| <= |U|" << std::endl;
+    std::cout << "0 <= n <= " << MAX_DEPTH << ", 1 <= k <= " << MAX_MULTIPLICITY << ", 0 <= m_A, m_B <= m_Û" << std::endl;
 }
 
 void Menu::show_table() const{
     size_t code_width = std::max<size_t>(carrier->get_depth(), 3);
     // числа выравниваются по самому длинному из них - мощности |U| в строке Σ
-    size_t number_width = std::max<size_t>(std::to_string(universe.cardinality()).size(), 3) + 1;
-    std::cout << pad_right("код", code_width) << pad_left("kU", number_width)
-              << pad_left("kA", number_width) << pad_left("kB", number_width) << std::endl;
+    size_t number_width = std::max<size_t>(std::to_string(universe.cardinality()).size(), 4) + 1;
+    std::cout << pad_right("x_i", code_width) << pad_left("a_Ui", number_width)
+              << pad_left("a_Ai", number_width) << pad_left("a_Bi", number_width) << std::endl;
     size_t rows = std::min(universe.size(), TABLE_LIMIT);
     for(size_t i = 0; i < rows; i++){
-        std::cout << pad_right(carrier->get_code(i), code_width)
+        std::cout << pad_right(carrier->get_depth() == 0 ? "ε" : carrier->get_code(i), code_width)
                   << pad_left(std::to_string(universe.get_count(i)), number_width)
                   << pad_left(a_ready ? std::to_string(a.get_count(i)) : "-", number_width)
                   << pad_left(b_ready ? std::to_string(b.get_count(i)) : "-", number_width) << std::endl;
@@ -314,7 +311,7 @@ void Menu::show_operations() const{
     std::vector<Multiset> results = compute_operations();
     for(size_t i = 0; i < OPERATION_COUNT; i++){
         std::cout << pad_right(OPERATIONS[i].notation, 6) << "= " << format_multiset(results[i])
-                  << ", |" << OPERATIONS[i].notation << "| = " << results[i].cardinality() << std::endl;
+                  << ", m_(" << OPERATIONS[i].notation << ") = " << results[i].cardinality() << std::endl;
     }
 
     // следствия определений: |¬A| = |U| - |A| и |A ∪ B| + |A ∩ B| = |A| + |B|
@@ -324,15 +321,15 @@ void Menu::show_operations() const{
     size_t complement = results[5].cardinality();
     size_t unite = results[0].cardinality();
     size_t intersect = results[1].cardinality();
-    std::cout << "проверка: |¬A| = |U| - |A|: " << complement << " = " << u << " - " << na
+    std::cout << "проверка: m_(¬A) = m_Û - m_A: " << complement << " = " << u << " - " << na
               << (complement == u - na ? " верно" : " НЕВЕРНО") << std::endl;
-    std::cout << "проверка: |A ∪ B| + |A ∩ B| = |A| + |B|: " << unite << " + " << intersect << " = " << na << " + " << nb
+    std::cout << "проверка: m_(A ∪ B) + m_(A ∩ B) = m_A + m_B: " << unite << " + " << intersect << " = " << na << " + " << nb
               << (unite + intersect == na + nb ? " верно" : " НЕВЕРНО") << std::endl;
 }
 
 void Menu::show_matrix() const{
     std::vector<Multiset> results = compute_operations();
-    std::vector<std::string> titles = {"U", "A", "B"};
+    std::vector<std::string> titles = {"Û", "A", "B"};
     std::vector<const Multiset*> rows = {&universe, &a, &b};
     for(size_t i = 0; i < OPERATION_COUNT; i++){
         titles.push_back(compact(OPERATIONS[i].notation));
@@ -346,8 +343,8 @@ void Menu::show_matrix() const{
     size_t columns = std::min(universe.size(), (MATRIX_WIDTH - label_width - total_width) / column_width);
 
     std::cout << pad_right("", label_width);
-    for(size_t j = 0; j < columns; j++) std::cout << pad_left(carrier->get_code(j), column_width);
-    std::cout << pad_left("|·|", total_width) << std::endl;
+    for(size_t j = 0; j < columns; j++) std::cout << pad_left(carrier->get_depth() == 0 ? "ε" : carrier->get_code(j), column_width);
+    std::cout << pad_left("m_X", total_width) << std::endl;
     for(size_t i = 0; i < rows.size(); i++){
         std::cout << pad_right(titles[i], label_width);
         for(size_t j = 0; j < columns; j++){

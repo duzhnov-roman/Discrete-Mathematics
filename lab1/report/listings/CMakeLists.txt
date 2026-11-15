@@ -14,5 +14,5 @@ set(CORE_SOURCES
 add_executable(lab1 src/main.cpp src/ui/Input.cpp src/ui/Menu.cpp ${CORE_SOURCES})
 target_include_directories(lab1 PRIVATE src)
 
-add_executable(bench tools/bench.cpp ${CORE_SOURCES})
+add_executable(bench tools/bench.cpp src/core/GrayCode.cpp)
 target_include_directories(bench PRIVATE src)

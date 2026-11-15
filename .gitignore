@@ -13,6 +13,11 @@
 !*.png
 !*.py
 !lab1/report/scenarios/*.txt
+!lab1/report_updated/README.md
+!lab1/report_updated/out/*.txt
+!lab1/report_updated/scenarios/*.txt
+!lab1/report_new/README.md
+/lab1/report_new/qa/
 !.gitignore
 
 # Папки сборки CMake

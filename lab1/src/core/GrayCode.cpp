@@ -22,10 +22,7 @@ std::vector<size_t> generate_gray_code(size_t depth){
         throw InvalidDepthError();
     }
     std::vector<size_t> codes;
-    // при n = 0 кодов нет
-    if(depth == 0){
-        return codes;
-    }
+    // При n = 0 имеется одно слово длины 0: пустое слово.
     size_t count = size_t(1) << depth;
     codes.reserve(count);
     size_t code = 0;

@@ -1,0 +1,270 @@
+В выводе мультимножество записывается в виде \code{⟨2(000), 1(011)⟩}: перед словом в скобках стоит его показатель. Слова с нулевыми показателями пропускаются, пустое мультимножество обозначается \code{⟨⟩}. При ручном вводе задаются пары \code{слово:показатель} через пробел, например \code{000:2 011:1}; если показатель не указан, он равен 1.
+
+Носитель хранится в классе \code{CodeSet} (подраздел~\ref{sec:codeset}). Поле \code{depth} задаёт разрядность $n$. Контейнер \code{codes} типа \code{std::vector<size_t>} содержит числовые значения слов в порядке кода Грея; двоичная запись нужной длины формируется при выводе слова. Вектор \code{positions} того же типа задаёт обратное соответствие: по числовому значению слова определяется его номер в \code{codes}.
+
+Мультимножество реализовано классом \code{Multiset} (подраздел~\ref{sec:multiset}). Поле \code{carrier} типа \code{std::shared_ptr<const CodeSet>} задаёт общий носитель для $\hat U$, $A$, $B$ и результатов операций. Слова не копируются в каждое мультимножество, а изменение общего носителя через \code{carrier} запрещено. В поле \code{counts} типа \code{std::vector<size_t>} каждое мультимножество хранит собственные показатели всех $N$ слов, включая нулевые.
+
+В описаниях методов \code{this} — текущий экземпляр соответствующего класса: для \code{CodeSet} это носитель, для \code{Multiset} — мультимножество. Индекс $j$ в векторах начинается с 0 и соответствует элементу $x_{j+1}$ в записи математического описания, начинающейся с $x_1$.
+
+\subsection{Код Грея и носитель}
+\label{sec:codeset}
+
+\fn{changed_bit}
+{номер шага $i>0$.}
+{Номер разряда, который нужно инвертировать: число нулей в конце двоичной записи $i$.}
+\functioncode{changed_bit}{01.cpp}
+
+\fn{generate_gray_code}
+{\code{depth} — разрядность $n$.}
+{Последовательность $N=2^n$ слов кода Грея. Первое слово состоит из нулей; каждое следующее получается инверсией разряда, найденного \code{changed_bit}. При $n=0$ последовательность содержит одно пустое слово.}
+\functioncode{generate_gray_code}{02.cpp}
+
+\fn{code_to_string}
+{\code{code} — слово кода; \code{depth} — его разрядность $n$.}
+{Двоичная запись слова длины $n$, включая начальные нули.}
+\functioncode{code_to_string}{03.cpp}
+
+\fn{CodeSet::CodeSet}
+{\code{this} — создаваемый носитель; \code{depth} — разрядность $n$.}
+{Универсум $U$ из $N=2^n$ слов в порядке кода Грея и соответствие между каждым словом и его номером.}
+\functioncode{CodeSet::CodeSet}{04.cpp}
+
+\fn{CodeSet::get_depth}
+{\code{this} — носитель $U$.}
+{Разрядность $n$ слов носителя.}
+\functioncode{CodeSet::get_depth}{05.cpp}
+
+\fn{CodeSet::size}
+{\code{this} — носитель $U$.}
+{Число слов $N=2^n$.}
+\functioncode{CodeSet::size}{06.cpp}
+
+\fn{CodeSet::get_code}
+{\code{this} — носитель $U$; \code{i} — номер слова, $0\le i<N$.}
+{Слово $x_{i+1}$ длины $n$. При недопустимом номере возникает ошибка.}
+\functioncode{CodeSet::get_code}{07.cpp}
+
+\fn{CodeSet::find}
+{\code{this} — носитель $U$; \code{code} — искомое слово.}
+{Номер слова в порядке кода Грея либо признак отсутствия подходящего слова. Допустимое слово состоит из $n$ символов 0 и 1; при $n=0$ допустимо пустое слово.}
+\functioncode{CodeSet::find}{08.cpp}
+
+\subsection{Автоматический выбор показателей}
+
+\fn{generator}
+{текущее состояние генератора случайных чисел.}
+{Генератор последовательности, используемой при выборе $k$, мощности мультимножества и слова, показатель которого увеличивается при автоматическом заполнении.}
+\functioncode{generator}{09.cpp}
+
+\fn{make_seed}
+{значение источника случайных чисел и текущее время.}
+{Начальный параметр $s$ генератора, применяемого для автоматического заполнения мультимножеств.}
+\functioncode{make_seed}{10.cpp}
+
+\fn{seed_random}
+{\code{seed} — начальный параметр $s$.}
+{Установлено начальное состояние последовательности случайных чисел для автоматического выбора показателей.}
+\functioncode{seed_random}{11.cpp}
+
+\fn{random_below}
+{\code{bound} — положительная верхняя граница $b$.}
+{Равновероятно выбранное целое число $r$, $0\le r<b$. Для показателя $k$ используется $1+r$ при $b=100$; при заполнении выбирается номер одного из ещё не заполненных слов.}
+\functioncode{random_below}{12.cpp}
+
+\subsection{Мультимножества и операции}
+\label{sec:multiset}
+
+Для методов этого подраздела \code{this} обозначает текущее мультимножество $\hat X$. При выполнении операций его роль играет $A$, а аргумент \code{b} обозначает $B$. Мультимножества должны иметь общий носитель. В формулах ниже $i=1,\ldots,N$.
+
+\fn{Multiset::Multiset}
+{\code{this} — создаваемое мультимножество; \code{carrier} — носитель $U$.}
+{Пустое мультимножество $\hat X$ над $U$: $a_i(x_i)=0$ для всех слов, $m_{\hat X}=0$.}
+\functioncode{Multiset::Multiset}{13.cpp}
+
+\fn{Multiset::check_same_carrier}
+{\code{this} — $\hat X$; \code{other} — $\hat Y$.}
+{Проверено, что $\hat X$ и $\hat Y$ заданы над одним носителем $U$. Иначе возникает ошибка несовпадения носителей.}
+\functioncode{Multiset::check_same_carrier}{14.cpp}
+
+\fn{Multiset::check_within}
+{\code{this} — $\hat X$; \code{universe} — $\hat U$.}
+{Проверено включение $\hat X\subseteq\hat U$, то есть $a_i(x_i)\le a_{\hat U}(x_i)$ для каждого слова. При нарушении условия возникает ошибка.}
+\functioncode{Multiset::check_within}{15.cpp}
+
+\fn{Multiset::get_carrier}
+{\code{this} — $\hat X$.}
+{Носитель $U$, задающий слова и их порядок в $\hat X$.}
+\functioncode{Multiset::get_carrier}{16.cpp}
+
+\fn{Multiset::size}
+{\code{this} — $\hat X$.}
+{Число слов носителя $N$; оно не зависит от показателей и мощности $\hat X$.}
+\functioncode{Multiset::size}{17.cpp}
+
+\fn{Multiset::get_count}
+{\code{this} — $\hat X$; \code{i} — номер слова, $0\le i<N$.}
+{Показатель $a_{i+1}(x_{i+1})$. При недопустимом номере возникает ошибка.}
+\functioncode{Multiset::get_count}{18.cpp}
+
+\fn{Multiset::set_count}
+{\code{this} — $\hat X$; \code{i} — номер слова; \code{count} — новый показатель $a\ge0$.}
+{Показатель слова $x_{i+1}$ заменён на $a$. Допустимость номера проверяется здесь, а ограничение показателя значением в $\hat U$ — при заполнении мультимножества.}
+\functioncode{Multiset::set_count}{19.cpp}
+
+\fn{Multiset::cardinality}
+{\code{this} — $\hat X$.}
+{Мощность $m_{\hat X}=\sum_{i=1}^{N}a_i(x_i)$.}
+\functioncode{Multiset::cardinality}{20.cpp}
+
+\fn{Multiset::is_submultiset_of}
+{\code{this} — $\hat X$; \code{other} — $\hat Y$.}
+{Истинность включения $\hat X\subseteq\hat Y$: показатель каждого слова в $\hat X$ не больше показателя того же слова в $\hat Y$.}
+\functioncode{Multiset::is_submultiset_of}{21.cpp}
+
+\fn{Multiset::unite}
+{\code{this} — $A$; \code{b} — $B$.}
+{Объединение $A\cup B$ с показателями $\max\{\aA,\aB\}$.}
+\functioncode{Multiset::unite}{22.cpp}
+
+\fn{Multiset::intersect}
+{\code{this} — $A$; \code{b} — $B$.}
+{Пересечение $A\cap B$ с показателями $\min\{\aA,\aB\}$.}
+\functioncode{Multiset::intersect}{23.cpp}
+
+\fn{Multiset::complement}
+{\code{this} — $A$; \code{universe} — $\hat U$.}
+{Дополнение $\overline A$ с показателями $\aU-\aA$. Перед вычислением проверяется $A\subseteq\hat U$.}
+\functioncode{Multiset::complement}{24.cpp}
+
+\fn{Multiset::difference}
+{\code{this} — $A$; \code{b} — $B$; \code{universe} — $\hat U$.}
+{Разность $A\setminus B=A\cap\overline B$ с показателями $\min\{\aA,\aU-\aB\}$. При перестановке $A$ и $B$ получается $B\setminus A$.}
+\functioncode{Multiset::difference}{25.cpp}
+
+\fn{Multiset::symmetric_difference}
+{\code{this} — $A$; \code{b} — $B$; \code{universe} — $\hat U$.}
+{Симметрическая разность $(A\setminus B)\cup(B\setminus A)$. Показатель каждого слова равен большему из его показателей в двух разностях.}
+\functioncode{Multiset::symmetric_difference}{26.cpp}
+
+\fn{Multiset::arithmetic_sum}
+{\code{this} — $A$; \code{b} — $B$; \code{universe} — $\hat U$.}
+{Арифметическая сумма $A+B$ с показателями $\min\{\aA+\aB,\aU\}$. Проверяется включение обоих мультимножеств в $\hat U$.}
+\functioncode{Multiset::arithmetic_sum}{27.cpp}
+
+\fn{Multiset::arithmetic_difference}
+{\code{this} — $A$; \code{b} — $B$.}
+{Арифметическая разность $A-B$ с показателями $\max\{\aA-\aB,0\}$.}
+\functioncode{Multiset::arithmetic_difference}{28.cpp}
+
+\fn{Multiset::arithmetic_product}
+{\code{this} — $A$; \code{b} — $B$; \code{universe} — $\hat U$.}
+{Арифметическое произведение $A*B$ с показателями $\min\{\aA*\aB,\aU\}$. Проверяется включение обоих мультимножеств в $\hat U$.}
+\functioncode{Multiset::arithmetic_product}{29.cpp}
+
+\fn{Multiset::arithmetic_division}
+{\code{this} — $A$; \code{b} — $B$.}
+{Арифметическое частное $A:B$: показатель равен $\lfloor\aA:\aB\rfloor$ при $\aB\ne0$ и нулю при $\aB=0$.}
+\functioncode{Multiset::arithmetic_division}{30.cpp}
+
+\fn{uniform_universe}
+{\code{carrier} — универсум $U$; \code{multiplicity} — показатель $k$, $1\le k\le100$.}
+{Мультимножество $\hat U$ с одинаковыми показателями $a_{\hat U}(x_i)=k$ и мощностью $m_{\hat U}=kN$. Недопустимое значение $k$ вызывает ошибку.}
+\functioncode{uniform_universe}{31.cpp}
+
+\fn{random_submultiset}
+{\code{bound} — ограничивающее мультимножество $\hat U$; \code{cardinality} — требуемая мощность $c$, $0\le c\le m_{\hat U}$.}
+{Мультимножество мощности $c$ с показателями, не превышающими показателей в $\hat U$. На каждом шаге случайно выбирается слово со свободным местом и его показатель увеличивается на 1. После достижения предела слово исключается из дальнейшего выбора.}
+\functioncode{random_submultiset}{32.cpp}
+
+\subsection{Ошибки и ограничения}
+
+При ручном вводе проверяются длина и состав слова, запись показателя, свободное место у слова и оставшаяся мощность. Изменения принимаются только после проверки всей строки. Пустая строка отменяет заполнение. Повторное создание универсума требует заново задать $A$ и $B$.
+
+\fn{GrayCodeError::GrayCodeError}
+{\code{this} — создаваемая ошибка; \code{message} — её описание.}
+{Обозначена ошибка при работе с кодом Грея.}
+\functioncode{GrayCodeError::GrayCodeError}{33.cpp}
+
+\fn{InvalidDepthError::InvalidDepthError}
+{\code{this} — создаваемая ошибка.}
+{Сообщено, что заданная разрядность не позволяет представить $N=2^n$ в программе.}
+\functioncode{InvalidDepthError::InvalidDepthError}{34.cpp}
+
+\fn{CodeIndexError::CodeIndexError}
+{\code{this} — создаваемая ошибка.}
+{Сообщено, что номер слова находится вне носителя.}
+\functioncode{CodeIndexError::CodeIndexError}{35.cpp}
+
+\fn{MultisetError::MultisetError}
+{\code{this} — создаваемая ошибка; \code{message} — её описание.}
+{Обозначена ошибка при работе с мультимножеством.}
+\functioncode{MultisetError::MultisetError}{36.cpp}
+
+\fn{MultisetIndexError::MultisetIndexError}
+{\code{this} — создаваемая ошибка.}
+{Сообщено, что для указанного номера нет элемента носителя.}
+\functioncode{MultisetIndexError::MultisetIndexError}{37.cpp}
+
+\fn{CarrierMismatchError::CarrierMismatchError}
+{\code{this} — создаваемая ошибка.}
+{Сообщено о попытке выполнить операцию над мультимножествами с разными носителями.}
+\functioncode{CarrierMismatchError::CarrierMismatchError}{38.cpp}
+
+\fn{NotSubmultisetError::NotSubmultisetError}
+{\code{this} — создаваемая ошибка.}
+{Сообщено о превышении показателя слова относительно ограничения в $\hat U$.}
+\functioncode{NotSubmultisetError::NotSubmultisetError}{39.cpp}
+
+\fn{CardinalityOverflowError::CardinalityOverflowError}
+{\code{this} — создаваемая ошибка.}
+{Сообщено, что требуемая мощность $c$ превышает мощность ограничивающего мультимножества.}
+\functioncode{CardinalityOverflowError::CardinalityOverflowError}{40.cpp}
+
+\fn{InvalidMultiplicityError::InvalidMultiplicityError}
+{\code{this} — создаваемая ошибка.}
+{Сообщено, что показатель $k$ не принадлежит отрезку $[1,100]$.}
+\functioncode{InvalidMultiplicityError::InvalidMultiplicityError}{41.cpp}
+
+\fn{InputClosedError::InputClosedError}
+{\code{this} — создаваемая ошибка.}
+{Зафиксировано завершение пользовательского ввода.}
+\functioncode{InputClosedError::InputClosedError}{42.cpp}
+
+Через меню задаются $0\le n\le19$, $1\le k\le100$, $0\le m_A,m_B\le m_{\hat U}$. Числа вводятся записью не длиннее девяти цифр. При $n=0$ универсум содержит единственное пустое слово $\varepsilon$; для его ручного ввода используется обозначение \code{ε}.
+
+\needspace{12\baselineskip}
+\subsection{Функция main}
+
+При входе в \code{main} происходит инициализация параметров.
+\functioncode{main}{main.cpp}
+
+\subsection{Время формирования универсума}
+
+Программа \code{bench} измеряет создание универсума $U$.
+\functioncode{main (tools/bench.cpp)}{bench_main.cpp}
+
+\functioncode{seconds}{seconds.cpp}
+
+Для каждой разрядности от 10 до 19 выполнено 21 измерение. В таблице~\ref{tab:bench} приведена медиана.
+
+\begin{table}[H]
+\caption{Зависимость времени формирования универсума от разрядности}
+\label{tab:bench}
+\centering
+\begin{singlespace}
+\begin{tabular}{|c|c|}
+\hline
+Разрядность $n$ & Время формирования, мс \\\hline
+10 & 0,0017 \\\hline
+11 & 0,0031 \\\hline
+12 & 0,0058 \\\hline
+13 & 0,0117 \\\hline
+14 & 0,0245 \\\hline
+15 & 0,0491 \\\hline
+16 & 0,1558 \\\hline
+17 & 0,3026 \\\hline
+18 & 0,5981 \\\hline
+19 & 1,2608 \\\hline
+\end{tabular}
+\end{singlespace}
+\end{table}

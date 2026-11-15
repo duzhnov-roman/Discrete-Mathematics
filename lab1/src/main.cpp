@@ -14,6 +14,7 @@ int main(int argc, char* argv[]){
 #ifdef _WIN32
     // строки программы записаны в UTF-8, а консоль Windows по умолчанию выводит в кодировке 866
     SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
 #endif
     // lab1 --seed N повторяет запуск с теми же случайными числами
     unsigned seed = make_seed();
@@ -21,7 +22,6 @@ int main(int argc, char* argv[]){
         seed = static_cast<unsigned>(std::strtoul(argv[2], nullptr, 10));
     }
     seed_random(seed);
-    std::cout << "seed = " << seed << std::endl;
 
     try{
         Menu menu;

@@ -27,7 +27,7 @@ public:
 };
 
 // Генерация кода Грея
-std::vector<size_t> generate_gray_code(size_t depth); // при depth = 0 последовательность пуста
+std::vector<size_t> generate_gray_code(size_t depth); // при depth = 0 одно пустое слово
 
 // двоичная запись кода длиной depth, старший разряд слева
 std::string code_to_string(size_t code, size_t depth);

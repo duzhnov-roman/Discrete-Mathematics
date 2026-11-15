@@ -153,7 +153,7 @@ void print_multiset(std::ostream& out, const Multiset& multiset, size_t limit){
     const CodeSet& carrier = multiset.get_carrier();
     size_t shown = 0;
     size_t hidden = 0;
-    out << "{";
+    out << "⟨";
     for(size_t i = 0; i < multiset.size(); i++){
         size_t count = multiset.get_count(i);
         if(count == 0) continue;
@@ -162,11 +162,11 @@ void print_multiset(std::ostream& out, const Multiset& multiset, size_t limit){
             continue;
         }
         if(shown > 0) out << ", ";
-        out << carrier.get_code(i) << "×" << count;
+        out << count << "(" << (carrier.get_depth() == 0 ? "ε" : carrier.get_code(i)) << ")";
         shown++;
     }
-    if(hidden > 0) out << ", ... ещё " << hidden << " эл.";
-    out << "}";
+    if(hidden > 0) out << (shown > 0 ? ", " : "") << "... ещё " << hidden << " эл.";
+    out << "⟩";
 }
 
 std::ostream& operator<<(std::ostream& out, const Multiset& multiset){
