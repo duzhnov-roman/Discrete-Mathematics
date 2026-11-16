@@ -1,0 +1,961 @@
+% !TeX program = xelatex
+% Компиляция: xelatex Course_Work_Report.tex (два запуска)
+% Альтернатива: tectonic Course_Work_Report.tex
+\documentclass[14pt,a4paper]{extarticle}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setmonofont{DejaVuSansMono.ttf}[BoldFont=DejaVuSansMono-Bold.ttf,Scale=0.82]
+\usepackage[english]{babel}
+\babelprovide[import,main]{russian}
+\usepackage{amsmath,unicode-math}
+\setmathfont{texgyretermes-math.otf}
+\usepackage[left=30mm,right=15mm,top=20mm,bottom=20mm]{geometry}
+\usepackage{setspace,indentfirst}
+\onehalfspacing
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{\parindent}{0pt}{12pt}
+\titlespacing*{\subsection}{\parindent}{12pt}{6pt}
+\newcommand{\sectionbreak}{\clearpage}
+\usepackage{graphicx,float,caption,array,tabularx}
+\DeclareCaptionLabelSeparator{dash}{~---~}
+\captionsetup{labelsep=dash,font=normalsize,skip=6pt}
+\captionsetup[figure]{name=Рисунок,justification=centering}
+\captionsetup[table]{name=Таблица,justification=raggedright,singlelinecheck=false,position=top}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\usepackage{fvextra,newfloat,needspace}
+\DeclareFloatingEnvironment[name=Листинг]{listing}
+\captionsetup[listing]{hypcap=false,justification=raggedright,singlelinecheck=false}
+\fvset{numbers=left,numbersep=5pt,fontsize=\scriptsize,frame=single,
+  breaklines=true,breakanywhere=true,breaksymbolleft={},tabsize=4}
+\usepackage[hidelinks]{hyperref}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newsavebox{\functiondescription}
+\newcommand{\fn}[3]{\par
+  \setbox\functiondescription=\vbox{\hsize=\linewidth
+  \noindent\textbf{\code{#1}}. \textit{Вход:} #2\par
+  \noindent\textit{Выход:} #3\par}
+  \Needspace{\dimexpr\ht\functiondescription+\dp\functiondescription+6\baselineskip\relax}
+  \medskip\unvbox\functiondescription}
+\newcommand{\structsection}[1]{\clearpage\phantomsection
+  \addcontentsline{toc}{section}{#1}
+  \begin{center}\textbf{#1}\end{center}\vspace{6pt}}
+\pagestyle{plain}
+\sloppy
+
+\begin{document}
+\begin{titlepage}
+\begin{singlespace}
+\begin{center}
+Министерство науки и высшего образования Российской Федерации\\
+Санкт-Петербургский политехнический университет Петра Великого\\
+Институт компьютерных наук и кибербезопасности\\
+Высшая школа технологий искусственного интеллекта
+\end{center}
+\vspace{5cm}
+\begin{center}
+\textbf{ОТЧЁТ}\\
+по курсовой работе\\[6pt]
+«Конечная арифметика. Вариант X8»\\[6pt]
+по дисциплине «Дискретная математика»
+\end{center}
+\vspace{3.5cm}
+\begin{flushright}
+\begin{tabular}{@{}l@{}}
+Выполнил\\
+студент гр. 5130201/50302 \underline{\hspace{2.5cm}} Р. Ю. Дужнов\\[12pt]
+Проверил\\
+преподаватель \underline{\hspace{2.5cm}} А. В. Востров\\[12pt]
+« \underline{\hspace{1cm}} » \underline{\hspace{3cm}} 2026 г.
+\end{tabular}
+\end{flushright}
+\vfill
+\begin{center}Санкт-Петербург\\2026\end{center}
+\end{singlespace}
+\end{titlepage}
+\setcounter{page}{2}
+\tableofcontents
+
+\structsection{ВВЕДЕНИЕ}
+
+В курсовой работе требуется разработать программу для выполнения арифметических операций над числами, записанными с помощью символов конечного алфавита. Для варианта X8 заданы элементы $a,b,c,d,e,f,g,h$ и правило перехода к следующему элементу. На основе этого правила необходимо определить порядок цифр, составить таблицы операций и организовать вычисления над многоразрядными числами.
+
+Программа должна выполнять сложение, вычитание, умножение и целочисленное деление с остатком. При вычислениях требуется учитывать знак числа, переносы и заимствования между разрядами. Для исходных чисел используется ограничение в восемь разрядов; при превышении этого ограничения результатом программа должна сообщать о переполнении разрядной сетки.
+
+Цель работы --- реализовать позиционную арифметику, в которой действия над отдельными цифрами выполняются по таблицам, без перевода операндов в стандартный целочисленный тип. Для достижения цели необходимо определить математическую модель, разработать алгоритмы операций, реализовать консольное меню и проверить правильность вычислений.
+
+Пользователь должен иметь возможность вводить выражения, просматривать таблицы операций и повторять вычисления без перезапуска программы. Требуется предусмотреть обработку недопустимых символов, ошибочного формата выражения, превышения длины операнда и деления на ноль.
+
+\section{Математическое описание}
+
+\subsection{Алфавит и порядок цифр}
+
+Исходный алфавит содержит восемь символов:
+\[
+X=\{a,b,c,d,e,f,g,h\}.
+\]
+Правило перехода «$+1$» имеет вид
+\[
+\begin{gathered}
+a\to b,\quad b\to e,\quad c\to a,\quad d\to a,\\
+e\to h,\quad f\to g,\quad g\to\{c,d\},\quad h\to f.
+\end{gathered}
+\]
+
+В принятой в программе модели символы $c$ и $d$ обозначают одну цифру: $c\sim d$. Для внутреннего представления выбирается $c$; все введённые символы $d$ заменяются на $c$. Цепочка последовательных цифр принимает вид
+\[
+a\to b\to e\to h\to f\to g\to c\to a.
+\]
+Таким образом, система содержит семь различных значений цифр. Нулевая цифра --- $a$, единичная --- $b$, основание позиционной системы счисления равно семи. Порядок цифр:
+\[
+a<b<e<h<f<g<c.
+\]
+
+Для математической проверки удобно ввести функцию значения цифры $\nu$ (таблица~\ref{tab:digits}). В самой программе перевода многоразрядных операндов в десятичную систему нет.
+
+\begin{table}[H]
+\caption{Соответствие цифр их значениям}\label{tab:digits}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|}\hline
+Символ & $a$ & $b$ & $e$ & $h$ & $f$ & $g$ & $c$, $d$\\\hline
+$\nu$ & 0 & 1 & 2 & 3 & 4 & 5 & 6\\\hline
+\end{tabular}
+\end{table}
+
+Важно различать циклический переход между цифрами и сложение позиционных чисел. После максимальной цифры $c$ младшая цифра становится $a$, а в следующий разряд переносится $b$. Поэтому для чисел $c+b=ba$, тогда как значение табличной функции следующей цифры равно $a$.
+
+\subsection{Позиционная запись числа}
+
+Пусть $x_{k-1}\ldots x_1x_0$ --- запись модуля числа, где $x_0$ является младшей цифрой. Значение записи определяется формулой
+\[
+V(x_{k-1}\ldots x_0)=\sum_{i=0}^{k-1}\nu(x_i)7^i.
+\]
+Знак хранится отдельно от модуля. Например,
+\[
+V(bc)=1\cdot7+6=13,\qquad V(ea)=2\cdot7+0=14.
+\]
+Ведущие нулевые цифры не изменяют значение числа и удаляются. Запись, состоящая только из символов $a$, приводится к одному символу $a$. У нулевого результата отрицательный знак снимается.
+
+Сначала модули чисел сравниваются по длине нормализованных записей. Если длины различаются, больше модуль с более длинной записью. При одинаковой длине результат определяет старший разряд, в котором цифры различаются, с учётом порядка $a<b<e<h<f<g<c$.
+
+Входное число содержит от одного до восьми буквенных разрядов. Максимальный допустимый модуль равен
+\[
+V(cccccccc)=7^8-1=5\,764\,800.
+\]
+Ограничение проверяется до удаления ведущих нулей. Поэтому строка из девяти символов $a$ также отклоняется. Для результата длина не ограничивается восемью разрядами: программа сохраняет полную запись и выводит предупреждение.
+
+\subsection{Таблицы одноразрядных операций}
+
+Пусть $x,y$ --- цифры и $\delta=\nu^{-1}$ --- обратное отображение в канонический алфавит. Таблицы младших цифр задаются следующим образом:
+\[
+\begin{aligned}
+\operatorname{ADD}(x,y)&=\delta((\nu(x)+\nu(y))\bmod7),\\
+\operatorname{SUB}(x,y)&=\delta((\nu(x)-\nu(y))\bmod7),\\
+\operatorname{MUL}(x,y)&=\delta((\nu(x)\nu(y))\bmod7).
+\end{aligned}
+\]
+При вычитании берётся неотрицательный остаток по модулю семи. Старшая цифра произведения определяется отдельно:
+\[
+\operatorname{MULHI}(x,y)=\delta\!\left(\left\lfloor\frac{\nu(x)\nu(y)}7\right\rfloor\right).
+\]
+Для деления на ненулевую цифру таблица хранит пару «частное, остаток»:
+\[
+\operatorname{DIV}(x,y)=
+\left(\delta\!\left(\left\lfloor\frac{\nu(x)}{\nu(y)}\right\rfloor\right),
+\delta(\nu(x)\bmod\nu(y))\right).
+\]
+Таблицы содержат только канонические символы. Строка соответствует первому операнду, столбец --- второму. В отчёте цифры расположены по возрастанию значения; в консоли программа выводит их в порядке ключей \code{std::map}, то есть $a,b,c,e,f,g,h$.
+
+\begin{table}[H]
+\caption{Сложение: младшая цифра результата}\label{tab:add}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|}\hline
+$+$ & $a$ & $b$ & $e$ & $h$ & $f$ & $g$ & $c$\\\hline
+$a$ & a & b & e & h & f & g & c\\\hline
+$b$ & b & e & h & f & g & c & a\\\hline
+$e$ & e & h & f & g & c & a & b\\\hline
+$h$ & h & f & g & c & a & b & e\\\hline
+$f$ & f & g & c & a & b & e & h\\\hline
+$g$ & g & c & a & b & e & h & f\\\hline
+$c$ & c & a & b & e & h & f & g\\\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Вычитание: разность по модулю семи}\label{tab:sub}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|}\hline
+$-$ & $a$ & $b$ & $e$ & $h$ & $f$ & $g$ & $c$\\\hline
+$a$ & a & c & g & f & h & e & b\\\hline
+$b$ & b & a & c & g & f & h & e\\\hline
+$e$ & e & b & a & c & g & f & h\\\hline
+$h$ & h & e & b & a & c & g & f\\\hline
+$f$ & f & h & e & b & a & c & g\\\hline
+$g$ & g & f & h & e & b & a & c\\\hline
+$c$ & c & g & f & h & e & b & a\\\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Умножение: младшая цифра произведения}\label{tab:mul}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|}\hline
+$\cdot$ & $a$ & $b$ & $e$ & $h$ & $f$ & $g$ & $c$\\\hline
+$a$ & a & a & a & a & a & a & a\\\hline
+$b$ & a & b & e & h & f & g & c\\\hline
+$e$ & a & e & f & c & b & h & g\\\hline
+$h$ & a & h & c & e & g & b & f\\\hline
+$f$ & a & f & b & g & e & c & h\\\hline
+$g$ & a & g & h & b & c & f & e\\\hline
+$c$ & a & c & g & f & h & e & b\\\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Умножение: старшая цифра произведения}\label{tab:mulhi}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|}\hline
+$\cdot$ & $a$ & $b$ & $e$ & $h$ & $f$ & $g$ & $c$\\\hline
+$a$ & a & a & a & a & a & a & a\\\hline
+$b$ & a & a & a & a & a & a & a\\\hline
+$e$ & a & a & a & a & b & b & b\\\hline
+$h$ & a & a & a & b & b & e & e\\\hline
+$f$ & a & a & b & b & e & e & h\\\hline
+$g$ & a & a & b & e & e & h & f\\\hline
+$c$ & a & a & b & e & h & f & g\\\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\caption{Деление цифр: частное и остаток}\label{tab:div}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}\hline
+$/ $ & $b$ & $e$ & $h$ & $f$ & $g$ & $c$\\\hline
+$a$ & $(a,a)$ & $(a,a)$ & $(a,a)$ & $(a,a)$ & $(a,a)$ & $(a,a)$\\\hline
+$b$ & $(b,a)$ & $(a,b)$ & $(a,b)$ & $(a,b)$ & $(a,b)$ & $(a,b)$\\\hline
+$e$ & $(e,a)$ & $(b,a)$ & $(a,e)$ & $(a,e)$ & $(a,e)$ & $(a,e)$\\\hline
+$h$ & $(h,a)$ & $(b,b)$ & $(b,a)$ & $(a,h)$ & $(a,h)$ & $(a,h)$\\\hline
+$f$ & $(f,a)$ & $(e,a)$ & $(b,b)$ & $(b,a)$ & $(a,f)$ & $(a,f)$\\\hline
+$g$ & $(g,a)$ & $(e,b)$ & $(b,e)$ & $(b,b)$ & $(b,a)$ & $(a,g)$\\\hline
+$c$ & $(c,a)$ & $(h,a)$ & $(e,a)$ & $(b,e)$ & $(b,b)$ & $(b,a)$\\\hline
+\end{tabular}
+\end{table}
+
+Например, ячейка $\operatorname{ADD}(c,b)=a$ задаёт только младшую цифру суммы; перенос равен $b$. Для произведения $c\cdot c$ таблицы дают младшую цифру $b$ и старшую $g$, то есть результат $gb$. Ячейка деления $(c,e)$ содержит $(h,a)$: $6=3\cdot2+0$.
+
+\subsection{Многоразрядные операции и знаки}
+
+Сложение модулей выполняется справа налево. Сначала складываются две цифры, затем к полученной цифре прибавляется перенос предыдущего разряда. Перенос возникает, если после табличного сложения цифра уменьшается относительно первого слагаемого в установленном порядке. Оба возможных переноса объединяются логическим «или».
+
+Вычитание модулей выполняется при условии $A\geq B$. Для каждого разряда вычисляется табличная разность цифр и вычитается заимствование. Если цифры уменьшаемого недостаточно, из следующего разряда заимствуется единица. После обработки всех разрядов ведущие нули удаляются.
+
+Умножение организовано «в столбик». Для каждой цифры второго множителя вычисляется произведение первого множителя на эту цифру. Таблицы \code{MUL} и \code{MULHI} дают младшую цифру и перенос. Умножение на $7^i$ выполняется дописыванием $i$ нулевых цифр $a$ справа. Частичные произведения суммируются.
+
+Деление модулей выполняется слева направо. На каждом шаге к текущему остатку дописывается очередная цифра делимого. Пока остаток не меньше делителя, делитель вычитается, а цифра частного увеличивается на единицу. До приписывания следующей цифры остаток меньше делителя; следовательно, новая цифра частного не превышает шести. Для двух одноразрядных модулей используется таблица \code{DIV}.
+
+При сложении чисел одинакового знака складываются их модули и сохраняется общий знак. При разных знаках из большего модуля вычитается меньший, а результат получает знак большего по модулю операнда. Вычитание сводится к сложению с противоположным числом. Знак произведения отрицателен, если знаки множителей различаются.
+
+Для деления со знаком используется евклидово условие:
+\[
+n=q\,m+r,\qquad 0\leq r<|m|,\quad m\neq0.
+\]
+Сначала находятся $Q,R$ из равенства $|n|=Q|m|+R$. Если $n<0$ и $R\neq0$, модуль частного увеличивается на единицу, а остаток заменяется на $|m|-R$. Знак частного определяется различием знаков операндов. Например,
+\[
+-13=(-7)\cdot2+1=7\cdot(-2)+1.
+\]
+В буквенной записи это соответствует частному $-ba$ при делении $-bc$ на $e$ и частному $ba$ при делении $-bc$ на $-e$; остаток в обоих случаях равен $b$.
+
+\section{Особенности реализации}
+
+Программа реализована на языке C++ в файле \code{course-work/main.cpp}. Таблицы \code{ADD}, \code{SUB}, \code{MUL} и \code{MULHI} имеют тип \code{map<char, map<char, char>>}. Таблица \code{DIV} хранит для каждой пары цифр пару символов частного и остатка. Эти таблицы заданы явно и не строятся через перевод многоразрядных чисел в десятичную систему.
+
+Модуль числа представлен строкой \code{Num}, знак и модуль --- структурой \code{SNum}. Тип \code{QR} объединяет частное и остаток деления модулей. Перечисление \code{Cmp} содержит результаты сравнения \code{LT}, \code{EQ}, \code{GT}. Константы \code{ZERO}, \code{ONE} и \code{MAX_DIGITS} равны соответственно \code{'a'}, \code{'b'} и восьми.
+
+\begin{singlespace}
+\captionof{listing}{Типы данных и основные константы}
+\begin{Verbatim}
+using Num = string;
+struct SNum { bool neg; Num mag; };
+enum class Cmp { LT, EQ, GT };
+struct QR { Num q, r; };
+static const char ZERO = 'a';
+static const char ONE = 'b';
+static const size_t MAX_DIGITS = 8;
+\end{Verbatim}
+\end{singlespace}
+
+\subsection{Порядок цифр и нормализация модулей}
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{succ}{\code{x} --- каноническая цифра.}{Следующая цифра циклического порядка. Используется ячейка сложения с \code{ONE}; после $c$ возвращается $a$.}
+\begin{singlespace}
+\captionof{listing}{\code{succ}}
+\begin{Verbatim}
+static char succ(char x) { return ADD.at(x).at(ONE); }
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{buildOrder}{Таблица \code{ADD} и константы \code{ZERO}, \code{ONE}.}{Заполнено отношение \code{LESS}: для каждой цифры отмечены все цифры, стоящие после неё в цикле от $a$. Например, устанавливаются $b<e$ и $g<c$. Вызывается один раз в начале работы.}
+\begin{singlespace}
+\captionof{listing}{\code{buildOrder}}
+\begin{Verbatim}
+static void buildOrder() {
+    string seen;                       // уже пройденные элементы цепочки
+    char cur = ZERO;
+    do {
+        for (char s : seen) LESS[s][cur] = true;   // всё, что раньше cur, меньше cur
+        seen.push_back(cur);
+        cur = succ(cur);
+    } while (cur != ZERO);
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{lessD}{\code{x}, \code{y} --- канонические цифры.}{\code{true}, если $x<y$ в установленном порядке, иначе \code{false}. Сравнение кодов символов не используется.}
+\begin{singlespace}
+\captionof{listing}{\code{lessD}}
+\begin{Verbatim}
+static bool lessD(char x, char y) {
+    auto it = LESS.find(x);
+    if (it == LESS.end()) return false;
+    auto jt = it->second.find(y);
+    return jt != it->second.end() && jt->second;
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{strip}{\code{s} --- строковая запись модуля.}{Нормализованный модуль без ведущих символов $a$. Для нуля возвращается строка \code{"a"}. Например, \code{"aabc"} превращается в \code{"bc"}.}
+\begin{singlespace}
+\captionof{listing}{\code{strip}}
+\begin{Verbatim}
+static Num strip(Num s) {
+    auto it = s.begin();
+    while (it != s.end() && *it == ZERO) ++it;
+    s.erase(s.begin(), it);
+    if (s.empty()) s = string(1, ZERO);
+    return s;
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{cmpMag}{\code{A}, \code{B} --- нормализованные модули.}{Результат сравнения. Разряды просматриваются от младших к старшим; каждое более старшее различие заменяет предыдущий результат. Если длины различаются, больше более длинная запись.}
+\begin{singlespace}
+\captionof{listing}{\code{cmpMag}}
+\begin{Verbatim}
+static Cmp cmpMag(const Num& A, const Num& B) {
+    auto ia = A.rbegin();
+    auto ib = B.rbegin();
+    Cmp res = Cmp::EQ;
+    while (ia != A.rend() && ib != B.rend()) {
+        if (*ia != *ib) res = lessD(*ia, *ib) ? Cmp::LT : Cmp::GT;
+        ++ia; ++ib;
+    }
+    if (ia != A.rend()) return Cmp::GT;
+    if (ib != B.rend()) return Cmp::LT;
+    return res;
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\Needspace{20\baselineskip}
+\subsection{Операции над модулями}
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{addMag}{\code{A}, \code{B} --- нормализованные модули.}{Нормализованная сумма модулей. Переносы \code{c1}, \code{c2} обнаруживают переход через максимальную цифру при двух табличных сложениях. Например, $c+b=ba$.}
+\begin{singlespace}
+\captionof{listing}{\code{addMag}}
+\begin{Verbatim}
+static Num addMag(const Num& A, const Num& B) {
+    Num res;
+    char carry = ZERO;
+    auto ia = A.rbegin();
+    auto ib = B.rbegin();
+    while (ia != A.rend() || ib != B.rend() || carry != ZERO) {
+        char x = (ia != A.rend()) ? *ia : ZERO;
+        char y = (ib != B.rend()) ? *ib : ZERO;
+        char s1 = ADD.at(x).at(y);
+        bool c1 = lessD(s1, x);
+        char s2 = ADD.at(s1).at(carry);
+        bool c2 = lessD(s2, s1);
+        res.insert(res.begin(), s2);
+        carry = (c1 || c2) ? ONE : ZERO;
+        if (ia != A.rend()) ++ia;
+        if (ib != B.rend()) ++ib;
+    }
+    return strip(res);
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{subMag}{\code{A}, \code{B} --- нормализованные модули, $A\geq B$.}{Нормализованная разность $A-B$. Переменная \code{borrow} содержит заимствование для следующего разряда. Предусловие обеспечивается вызывающими функциями.}
+\begin{singlespace}
+\captionof{listing}{\code{subMag}}
+\begin{Verbatim}
+static Num subMag(const Num& A, const Num& B) {
+    Num res;
+    char borrow = ZERO;
+    auto ia = A.rbegin();
+    auto ib = B.rbegin();
+    while (ia != A.rend()) {
+        char x = *ia;
+        char y = (ib != B.rend()) ? *ib : ZERO;
+        char d1 = SUB.at(x).at(y);
+        bool b1 = lessD(x, y);
+        char d2 = SUB.at(d1).at(borrow);
+        bool b2 = lessD(d1, borrow);
+        res.insert(res.begin(), d2);
+        borrow = (b1 || b2) ? ONE : ZERO;
+        ++ia;
+        if (ib != B.rend()) ++ib;
+    }
+    return strip(res);
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{mulDigit}{\code{A} --- модуль; \code{y} --- одна цифра.}{Произведение модуля на цифру. К младшей цифре произведения прибавляется предыдущий перенос; при переполнении старшая цифра увеличивается функцией \code{succ}.}
+\begin{singlespace}
+\captionof{listing}{\code{mulDigit}}
+\begin{Verbatim}
+static Num mulDigit(const Num& A, char y) {
+    Num res;
+    char carry = ZERO;
+    for (auto ia = A.rbegin(); ia != A.rend(); ++ia) {
+        char lo = MUL.at(*ia).at(y);
+        char hi = MULHI.at(*ia).at(y);
+        char t  = ADD.at(lo).at(carry);
+        if (lessD(t, lo)) hi = succ(hi);       // сложение с переносом дало ещё одну единицу
+        res.insert(res.begin(), t);
+        carry = hi;
+    }
+    if (carry != ZERO) res.insert(res.begin(), carry);
+    return strip(res);
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{mulMag}{\code{A}, \code{B} --- нормализованные модули.}{Произведение модулей. Строка \code{shift} задаёт разрядный сдвиг: к частичному произведению дописываются символы $a$, после чего оно прибавляется к \code{total}.}
+\begin{singlespace}
+\captionof{listing}{\code{mulMag}}
+\begin{Verbatim}
+static Num mulMag(const Num& A, const Num& B) {
+    Num total(1, ZERO);
+    std::string shift;                         // сдвиг на разряд = дописать 'a' справа
+    for (auto ib = B.rbegin(); ib != B.rend(); ++ib) {
+        Num part = mulDigit(A, *ib);
+        if (part != std::string(1, ZERO)) part += shift;
+        total = addMag(total, part);
+        shift.push_back(ZERO);
+    }
+    return total;
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{divMag}{\code{N} --- модуль делимого; \code{D} --- ненулевой модуль делителя.}{Структура \code{QR} с частным и остатком, удовлетворяющими $N=qD+r$, $0\leq r<D$. Для однозначных операндов используется таблица; для остальных --- последовательное деление с повторным вычитанием.}
+\begin{singlespace}
+\captionof{listing}{\code{divMag}}
+\begin{Verbatim}
+static QR divMag(const Num& N, const Num& D) {
+    if (N.size() == 1 && D.size() == 1) {      // обе - цифры: берём из таблицы DIV
+        auto qr = DIV.at(N[0]).at(D[0]);
+        return { std::string(1, qr.first), std::string(1, qr.second) };
+    }
+    Num q;
+    Num R(1, ZERO);
+    for (char d : N) {
+        if (R == std::string(1, ZERO)) R = std::string(1, d);   // R = R*база + d : дописываем цифру справа
+        else R.push_back(d);
+        char cnt = ZERO;
+        while (cmpMag(R, D) != Cmp::LT) {
+            R = subMag(R, D);
+            cnt = succ(cnt);
+        }
+        q.push_back(cnt);
+    }
+    return { strip(q), R };
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\subsection{Операции над числами со знаком}
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{isZero}{\code{m} --- нормализованный модуль.}{Признак равенства модуля нулю. Нормализованная запись нуля содержит ровно один символ $a$.}
+\begin{singlespace}
+\captionof{listing}{\code{isZero}}
+\begin{Verbatim}
+static bool isZero(const Num& m) { return m == std::string(1, ZERO); }
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{fixZero}{\code{v} --- число со знаком.}{Число с тем же модулем; при нулевом модуле знак становится неотрицательным. Запись «минус ноль» в результатах исключается.}
+\begin{singlespace}
+\captionof{listing}{\code{fixZero}}
+\begin{Verbatim}
+static SNum fixZero(SNum v) { if (isZero(v.mag)) v.neg = false; return v; }
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{addS}{\code{x}, \code{y} --- числа со знаком.}{Сумма чисел. Для одинаковых знаков вызывается \code{addMag}; для разных --- сравнение модулей и \code{subMag}. Равные модули с противоположными знаками дают ноль.}
+\begin{singlespace}
+\captionof{listing}{\code{addS}}
+\begin{Verbatim}
+static SNum addS(const SNum& x, const SNum& y) {
+    SNum r;
+    if (x.neg == y.neg) {
+        r = { x.neg, addMag(x.mag, y.mag) };
+    } else {
+        Cmp c = cmpMag(x.mag, y.mag);
+        if (c == Cmp::EQ)      r = { false, std::string(1, ZERO) };
+        else if (c == Cmp::GT) r = { x.neg, subMag(x.mag, y.mag) };
+        else                   r = { y.neg, subMag(y.mag, x.mag) };
+    }
+    return fixZero(r);
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{subS}{\code{x}, \code{y} --- числа со знаком.}{Разность $x-y$, вычисленная как сумма $x+(-y)$. Нормализацию нулевого результата выполняет \code{addS}.}
+\begin{singlespace}
+\captionof{listing}{\code{subS}}
+\begin{Verbatim}
+static SNum subS(const SNum& x, const SNum& y) {
+    return addS(x, SNum{ !y.neg, y.mag });
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{mulS}{\code{x}, \code{y} --- числа со знаком.}{Произведение модулей со знаком, определяемым выражением \code{x.neg != y.neg}. У нулевого произведения знак снимается.}
+\begin{singlespace}
+\captionof{listing}{\code{mulS}}
+\begin{Verbatim}
+static SNum mulS(const SNum& x, const SNum& y) {
+    return fixZero(SNum{ x.neg != y.neg, mulMag(x.mag, y.mag) });
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{divS}{\code{n}, \code{m} --- делимое и делитель; \code{q}, \code{r} --- выходные параметры.}{\code{false} при нулевом делителе; иначе \code{true}, частное и неотрицательный остаток. Для отрицательного делимого с ненулевым остатком выполняется поправка евклидова деления.}
+\begin{singlespace}
+\captionof{listing}{\code{divS}}
+\begin{Verbatim}
+static bool divS(const SNum& n, const SNum& m, SNum& q, SNum& r) {
+    if (isZero(m.mag)) return false;
+    QR qr = divMag(n.mag, m.mag);
+    Num Q = qr.q;
+    Num rem = qr.r;
+    if (n.neg && !isZero(rem)) {               // делимое отрицательное и не делится нацело:
+        Q   = addMag(Q, std::string(1, ONE));  //   округляем частное «вниз»,
+        rem = subMag(m.mag, rem);              //   остаток = |m| - остаток
+    }
+    q = fixZero(SNum{ n.neg != m.neg, Q });
+    r = SNum{ false, rem };
+    return true;
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\subsection{Ввод, вывод и обработка ошибок}
+
+Выражение вводится в виде трёх разделённых пробелами частей: \code{<число> <операция> <число>}. Разрешены операции \code{+}, \code{-}, \code{*}, \code{/}. Знак операнда записывается слитно с числом, например \code{-bc / e}. Разбор выделяет ровно три части: дополнительные слова считаются ошибкой.
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{canon}{\code{ch} --- буква операнда после приведения к нижнему регистру.}{Символ $c$ для входного $d$; остальные символы сохраняются. Канонизация обеспечивает равносильность двух обозначений одной цифры.}
+\begin{singlespace}
+\captionof{listing}{\code{canon}}
+\begin{Verbatim}
+static char canon(char ch) { return ch == 'd' ? 'c' : ch; }
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{parseOperand}{\code{tok} --- строка операнда; \code{out} --- выходное число.}{Пустая строка при успехе либо сообщение об ошибке. Обрабатываются необязательный знак, буквы $a,\ldots,h$ в обоих регистрах и отдельная запись \code{1} со знаком или без него, равная цифре $b$. Смешивать \code{1} с буквами нельзя.}
+\begin{singlespace}
+\captionof{listing}{\code{parseOperand}}
+\begin{Verbatim}
+static std::string parseOperand(const std::string& tok, SNum& out) {
+    auto it = tok.begin();
+    bool neg = false;
+    if (it != tok.end() && (*it == '+' || *it == '-')) { neg = (*it == '-'); ++it; }
+    std::string body(it, tok.end());
+    if (body.empty()) return "после знака нет числа";
+    if (body == "1") {                          // допустимая цифра: «+1» / «-1» (то есть b)
+        out = { neg, std::string(1, ONE) };
+        return "";
+    }
+    static const std::string LETTERS = "abcdefgh";
+    Num mag;
+    for (char raw : body) {
+        char ch = (char)std::tolower((unsigned char)raw);
+        if (std::isdigit((unsigned char)ch))
+            return std::string("цифра '") + raw + "' недопустима (из цифр можно только 1 как +1 / -1)";
+        if (LETTERS.find(ch) == std::string::npos)
+            return std::string("символ '") + raw + "' недопустим (нужны буквы a b c d e f g h)";
+        mag.push_back(canon(ch));
+    }
+    if (mag.size() > MAX_DIGITS) return "в числе больше 8 разрядов";
+    mag = strip(mag);
+    out = { neg && !isZero(mag), mag };
+    return "";
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+Функция проверяет наличие числа после знака, допустимость каждого символа и длину исходной буквенной записи. Затем заменяет $d$ на $c$, удаляет ведущие нули и нормализует знак. Например, \code{aabd} преобразуется в \code{bc}, а \code{-a} --- в \code{a}.
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{render}{\code{v} --- число со знаком; \code{cd} --- символ $c$ или $d$.}{Строковая запись числа с указанным обозначением максимальной цифры. В начало отрицательного числа добавляется знак минус.}
+\begin{singlespace}
+\captionof{listing}{\code{render}}
+\begin{Verbatim}
+static std::string render(const SNum& v, char cd) {
+    std::string s = v.neg ? "-" : "";
+    for (char ch : v.mag) s.push_back(ch == 'c' ? cd : ch);
+    return s;
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{both}{\code{v} --- число со знаком.}{Если модуль содержит $c$, выводятся две равные записи: со всеми $c$ и со всеми $d$. Например, \code{cc = dd}. Смешанные варианты \code{cd} и \code{dc} отдельно не перечисляются. Если $c$ нет, выводится одна запись.}
+\begin{singlespace}
+\captionof{listing}{\code{both}}
+\begin{Verbatim}
+static std::string both(const SNum& v) {
+    if (v.mag.find('c') == std::string::npos) return render(v, 'c');
+    return render(v, 'c') + " = " + render(v, 'd');
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{warnOverflow}{\code{v} --- вычисленный результат.}{При длине модуля больше восьми выведено предупреждение о переполнении. Сам результат не обрезается и не заменяется остатком по модулю $7^8$.}
+\begin{singlespace}
+\captionof{listing}{\code{warnOverflow}}
+\begin{Verbatim}
+static void warnOverflow(const SNum& v) {
+    if (v.mag.size() > MAX_DIGITS) std::cout << "   (внимание: результат длиннее 8 разрядов - переполнение разрядной сетки)\n";
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{evalLine}{\code{line} --- строка выражения.}{Вычислен и выведен результат либо возвращено сообщение об ошибке формата или операндов. При делении выводятся частное и остаток. Сообщение о делении на ноль печатается непосредственно внутри функции.}
+\begin{singlespace}
+\captionof{listing}{\code{evalLine}}
+\begin{Verbatim}
+static std::string evalLine(const std::string& line) {
+    std::istringstream in(line);
+    std::string t1, op, t2, extra;
+    if (!(in >> t1 >> op >> t2) || (in >> extra))
+        return "формат: <число> <операция> <число>, между числами и операцией обязательны пробелы";
+    if (op != "+" && op != "-" && op != "*" && op != "/")
+        return "операция должна быть одной из: + - * /";
+
+    SNum x, y;
+    std::string err = parseOperand(t1, x);
+    if (!err.empty()) return "первое число: " + err;
+    err = parseOperand(t2, y);
+    if (!err.empty()) return "второе число: " + err;
+
+    if (op == "/") {
+        SNum q, r;
+        if (!divS(x, y, q, r)) {
+            std::cout << "Ошибка: деление на a (ноль) невозможно.\n";
+            return "";
+        }
+        std::cout << "Частное: " << both(q) << "\n";
+        std::cout << "Остаток: " << both(r) << "\n";
+        warnOverflow(q);
+        return "";
+    }
+    SNum res = (op == "+") ? addS(x, y) : (op == "-") ? subS(x, y) : mulS(x, y);
+    std::cout << "Результат: " << both(res) << "\n";
+    warnOverflow(res);
+    return "";
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\Needspace{20\baselineskip}
+\subsection{Вывод таблиц}
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{printTable}{\code{title} --- заголовок; \code{t} --- таблица цифр.}{В консоль выведена таблица с заголовками строк и столбцов. Порядок строк и столбцов определяется контейнером \code{std::map}.}
+\begin{singlespace}
+\captionof{listing}{\code{printTable}}
+\begin{Verbatim}
+static void printTable(const std::string& title, const Table& t) {
+    std::cout << "\n" << title << "\n   |";
+    for (const auto& kv : t.begin()->second) std::cout << ' ' << kv.first;
+    std::cout << "\n";
+    for (const auto& row : t) {
+        std::cout << " " << row.first << " |";
+        for (const auto& cell : row.second) std::cout << ' ' << cell.second;
+        std::cout << "\n";
+    }
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{printDiv}{Таблица \code{DIV}.}{В консоль выведены пары частного и остатка. Столбца для нулевого делителя нет.}
+\begin{singlespace}
+\captionof{listing}{\code{printDiv}}
+\begin{Verbatim}
+static void printDiv() {
+    std::cout << "\nДеление (частное,остаток): строка - делимое, столбец - делитель\n   |";
+    for (const auto& kv : DIV.begin()->second) std::cout << "  " << kv.first << " ";
+    std::cout << "\n";
+    for (const auto& row : DIV) {
+        std::cout << " " << row.first << " |";
+        for (const auto& cell : row.second) std::cout << ' ' << cell.second.first << ',' << cell.second.second;
+        std::cout << "\n";
+    }
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{showTables}{Таблицы одноразрядных операций.}{Последовательно выведены сложение, вычитание, младшая и старшая цифры произведения, деление. Дополнительно сообщается о равносильности $d$ и $c$.}
+\begin{singlespace}
+\captionof{listing}{\code{showTables}}
+\begin{Verbatim}
+static void showTables() {
+    printTable("Сложение (строка + столбец)", ADD);
+    printTable("Вычитание (строка - столбец)", SUB);
+    printTable("Умножение, младшая цифра (строка * столбец)", MUL);
+    printTable("Умножение, старшая цифра (перенос)", MULHI);
+    printDiv();
+    std::cout << "\nЭлемент d равносилен c.\n";
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\Needspace{20\baselineskip}
+\subsection{Меню и функция main}
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{calcLoop}{Поток пользовательского ввода.}{Выполнена последовательность вычислений. После ошибки выводится пояснение, и ввод повторяется. Команда \code{m} или \code{M} возвращает в главное меню; конец потока завершает цикл.}
+\begin{singlespace}
+\captionof{listing}{\code{calcLoop}}
+\begin{Verbatim}
+static void calcLoop() {
+    std::string line;
+    while (true) {
+        std::cout << "\nВведите выражение (например: b + -a, -a + b, c * 1, bc / e), m - в меню: ";
+        if (!std::getline(std::cin, line)) return;
+        if (line == "m" || line == "M") return;
+        std::string err = evalLine(line);
+        if (!err.empty()) std::cout << "Ошибка ввода: " << err << ". Введите снова.\n";
+    }
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\par\noindent\begin{minipage}{\linewidth}
+\fn{main}{Стандартные потоки ввода и вывода.}{Сначала построен порядок цифр, затем организовано главное меню: \code{1} --- вычисление выражений, \code{2} --- таблицы, \code{0} --- выход. Неизвестный пункт вызывает сообщение с допустимыми вариантами.}
+\begin{singlespace}
+\captionof{listing}{\code{main}}
+\begin{Verbatim}
+int main() {
+    buildOrder();
+    std::string line;
+    while (true) {
+        std::cout << "\n=== Конечная арифметика, вариант X8 ===\n"
+                     "1 - вычислить выражение\n"
+                     "2 - показать таблицы\n"
+                     "0 - выход\n"
+                     "Выбор: ";
+        if (!std::getline(std::cin, line)) break;
+        if (line == "1")      calcLoop();
+        else if (line == "2") showTables();
+        else if (line == "0") break;
+        else std::cout << "Неизвестный пункт меню, введите 1, 2 или 0.\n";
+    }
+    return 0;
+}
+\end{Verbatim}
+\end{singlespace}
+\end{minipage}\par\medskip
+
+\Needspace{20\baselineskip}
+\subsection{Оценка вычислительной сложности}
+
+Размер алфавита постоянен и равен семи, поэтому обращения к таблицам и сравнение отдельных цифр рассматриваются как операции постоянной стоимости. Пусть $n,m$ --- длины модулей операндов, $k=\max(n,m)$.
+
+Сравнение модулей требует $O(k)$ действий. В сложении и вычитании обрабатывается $O(k)$ разрядов, однако каждая вставка в начало \code{std::string} может перемещать уже накопленные символы. Поэтому для данной реализации верхняя оценка времени равна $O(k^2)$.
+
+При умножении выполняется до $m$ частичных произведений и сложений длины не более $n+m$. Для операндов сравнимой длины консервативная оценка составляет $O(k^3)$. Деление обрабатывает $n$ цифр делимого; для каждой цифры частного выполняется не более шести вычитаний. С учётом вставок в начало строк его верхняя оценка при сравнимых длинах также составляет $O(k^3)$.
+
+Рабочая память для строковых операндов и результатов составляет $O(n+m)$; таблицы имеют постоянный размер. При входном ограничении в восемь разрядов эти затраты малы. Возможное улучшение --- накапливать результат от младших разрядов через \code{push_back}, а затем переворачивать строку; это устранило бы повторные вставки в её начало.
+
+\section{Результаты работы}
+
+\subsection{Контрольные примеры вычислений}
+
+Программа собрана компилятором \code{g++} с параметрами \code{-std=c++17 -O2 -Wall -Wextra}. Компиляция завершилась без предупреждений. В таблице~\ref{tab:examples} приведены результаты фактических запусков. Десятичные значения используются только для независимой проверки и не выводятся самой программой.
+
+\begin{table}[H]
+\caption{Проверка основных арифметических операций}\label{tab:examples}
+\centering\small
+\begin{tabularx}{\textwidth}{|l|L|L|}\hline
+Выражение & Результат программы & Проверка\\\hline
+\code{c + b} & \code{ba} & $6+1=7$\\\hline
+\code{ba - b} & \code{c = d} & $7-1=6$\\\hline
+\code{c * c} & \code{gb} & $6\cdot6=36$\\\hline
+\code{e - c} & \code{-f} & $2-6=-4$\\\hline
+\code{-e + g} & \code{h} & $-2+5=3$\\\hline
+\code{bc / e} & \code{q: c = d}, \code{r: b} & $13=6\cdot2+1$\\\hline
+\code{-bc / e} & \code{q: -ba}, \code{r: b} & $-13=(-7)\cdot2+1$\\\hline
+\code{bc / -e} & \code{q: -c = -d}, \code{r: b} & $13=(-6)\cdot(-2)+1$\\\hline
+\code{-bc / -e} & \code{q: ba}, \code{r: b} & $-13=7\cdot(-2)+1$\\\hline
+\end{tabularx}
+\end{table}
+
+Ниже приведены сокращённые консольные протоколы. Введённые выражения помечены символом \code{>}; повторяющиеся приглашения программы опущены. Текст результатов соответствует выводу исполняемого файла.
+
+\begin{figure}[H]
+\begin{singlespace}
+\begin{Verbatim}[numbers=none,fontsize=\small]
+=== Конечная арифметика, вариант X8 ===
+1 - вычислить выражение
+2 - показать таблицы
+0 - выход
+
+> c + b
+Результат: ba
+> ba - b
+Результат: c = d
+> c * c
+Результат: gb
+> -bc / e
+Частное: -ba
+Остаток: b
+\end{Verbatim}
+\end{singlespace}
+\caption{Основные операции и деление отрицательного числа}
+\end{figure}
+
+\subsection{Нормализация и предельные значения}
+
+Ввод \code{D + b} дал результат \code{ba}: заглавная буква приведена к нижнему регистру, после чего $d$ заменено на $c$. Для \code{bd + b} получено \code{ea}, что соответствует равенству $13+1=14$. В выражении \code{-a + a} результат равен \code{a}, отрицательный ноль не появляется.
+
+При сложении максимального восьмиразрядного числа с единицей получен девятиразрядный результат \code{baaaaaaaa}, соответствующий $7^8=5\,764\,801$. Программа сохранила полный результат и вывела предупреждение. При умножении двух максимальных операндов получена шестнадцатиразрядная запись:
+\[
+V(cccccccgaaaaaaab)=(7^8-1)^2.
+\]
+
+\begin{figure}[H]
+\begin{singlespace}
+\begin{Verbatim}[numbers=none,fontsize=\small]
+> D + b
+Результат: ba
+> -a + a
+Результат: a
+> cccccccc + b
+Результат: baaaaaaaa
+   (внимание: результат длиннее 8 разрядов -
+   переполнение разрядной сетки)
+> cccccccc * cccccccc
+Результат: cccccccgaaaaaaab = dddddddgaaaaaaab
+   (внимание: результат длиннее 8 разрядов -
+   переполнение разрядной сетки)
+\end{Verbatim}
+\end{singlespace}
+\caption{Нормализация и переполнение разрядной сетки}
+\end{figure}
+
+\Needspace{20\baselineskip}
+\subsection{Обработка некорректного ввода}
+
+Проверены деление на ноль, неизвестная операция, отсутствие пробелов, недопустимая цифра и слишком длинный операнд. Во всех случаях программа сообщила причину ошибки и сохранила возможность следующего ввода.
+
+\begin{table}[H]
+\caption{Проверка ошибочного ввода}
+\centering\small
+\begin{tabularx}{\textwidth}{|l|L|}\hline
+Ввод & Реакция программы\\\hline
+\code{b / a} & Сообщение о невозможности деления на $a$ (ноль)\\\hline
+\code{aaaaaaaaa + b} & В первом числе больше восьми разрядов\\\hline
+\code{b+b} & Сообщение о формате и обязательных пробелах\\\hline
+\texttt{b \% e} & Сообщение о допустимых операциях \code{+ - * /}\\\hline
+\code{b2 + a} & Цифра \code{2} недопустима\\\hline
+\code{i + a} & Буква \code{i} не входит в алфавит\\\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Автоматическая проверка}
+
+Для независимой проверки подготовлена программа \code{course-work/build/verify_report.cpp}. Она подключает функции исходного файла и сравнивает результаты с арифметикой стандартного целочисленного типа. Перевод чисел используется только при проверке.
+
+Проверены все 49 пар цифр для каждой из таблиц \code{ADD}, \code{SUB}, \code{MUL}, \code{MULHI} и 42 пары с ненулевым делителем для \code{DIV}: всего 238 элементов.
+
+Перебраны все пары чисел от $-48$ до $48$ включительно (9409 пар) и 10\,000 псевдослучайных пар из диапазона $[-5\,764\,800;5\,764\,800]$. Генератор \code{std::mt19937_64} инициализирован значением 20261116.
+
+Для каждой из 19\,409 пар проверены четыре операции: всего 77\,636 проверок. Для деления проверялись равенство $n=qm+r$, границы $0\leq r<|m|$ либо отказ при нулевом делителе. Дополнительно проверены 14 вариантов разбора операндов, перенос в девятый разряд и произведение максимальных модулей. Все проверки завершились успешно.
+
+\structsection{ЗАКЛЮЧЕНИЕ}
+
+В результате курсовой работы разработана программа конечной арифметики для варианта X8. По заданному правилу перехода определены семь различных значений цифр, установлен их порядок и составлены таблицы сложения, вычитания, умножения и деления. Символы $c$ и $d$ обрабатываются как два обозначения одной цифры.
+
+Реализованы многоразрядные операции над числами со знаком. Сложение учитывает переносы, вычитание --- заимствования, умножение выполняется по частичным произведениям, деление возвращает частное и неотрицательный остаток. Вычисления выполняются над строковыми записями с использованием таблиц цифр.
+
+Программа предоставляет меню, просмотр таблиц и повторный ввод выражений. Обрабатываются недопустимые символы, ошибки формата, превышение длины входного числа и деление на ноль. Если результат содержит более восьми разрядов, выводится предупреждение и сохраняется полная запись результата.
+
+Корректность проверена на всех элементах таблиц, контрольных примерах, полном переборе малых операндов и псевдослучайных парах в допустимом диапазоне. Все выполненные проверки прошли успешно.
+
+Недостатком реализации являются повторные вставки в начало строки при построении результатов. При увеличении допустимой разрядности это приводит к дополнительным перемещениям символов. Дальнейшее развитие программы возможно за счёт накопления разрядов в обратном порядке, выделения арифметического ядра в отдельный модуль и добавления других операций, например возведения в степень.
+
+\structsection{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
+
+\begin{enumerate}
+\item Дужнов, Р. Ю. Конечная арифметика, вариант X8 : исходный код программы на языке C++. --- 2026. --- Файл \code{course-work/main.cpp}.
+\item Дужнов, Р. Ю. Проверка конечной арифметики, вариант X8 : вспомогательная программа. --- 2026. --- Файл \code{course-work/build/verify_report.cpp}.
+\end{enumerate}
+
+\end{document}
